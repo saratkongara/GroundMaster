@@ -1,0 +1,11 @@
+[
+    { "id": 1, "name": "Toilet Cleaning", "start": "A-10", "end": "A+15", "certifications": [1], "type": "F", "exclude_services": [] },
+    { "id": 2, "name": "Water Cart Service", "start": "A-10", "end": "A+10", "certifications": [2], "type": "F", "exclude_services": [] },
+    { "id": 3, "name": "Refueling", "start": "A+5", "end": "D-15", "certifications": [3, 4], "type": "C" },
+    { "id": 4, "name": "Baggage Loading", "start": "A+10", "end": "D-30", "certifications": [5, 6], "type": "F", "exclude_services": [8] },
+    { "id": 5, "name": "GPU Service", "start": "A", "end": "D", "certifications": [7], "type": "M" },
+    { "id": 6, "name": "Team Lead On-Block", "start": "A", "end": "D", "certifications": [8, 9], "type": "C" },
+    { "id": 7, "name": "ULD Loading/Unloading", "start": "A+20", "end": "D-30", "certifications": [10, 11], "type": "F", "exclude_services": [4, 8] },
+    { "id": 8, "name": "Baggage Unloading", "start": "A", "end": "A+30", "certifications": [5, 6], "type": "F", "exclude_services": [4, 7] },
+    { "id": 9, "name": "Pushback", "start": "D-10", "end": "D", "certifications": [12], "type": "M", "exclude_services": [] }
+]

@@ -1,0 +1,14 @@
+[
+    { "id": 1, "name": "Aircraft Lavatory Maintenance Certification" },
+    { "id": 2, "name": "Airside Water Service Training" },
+    { "id": 3, "name": "Aircraft Fuel Handling Certification" },
+    { "id": 4, "name": "Hazardous Material Handling" },
+    { "id": 5, "name": "Ground Operations Safety Training" },
+    { "id": 6, "name": "Baggage Handling Certification" },
+    { "id": 7, "name": "Ground Power Unit (GPU) Operation Certification" },
+    { "id": 8, "name": "Airport Ground Operations Management" },
+    { "id": 9, "name": "Airside Safety Certification" },
+    { "id": 10, "name": "ULD Handling Certification" },
+    { "id": 11, "name": "Forklift Operation Certification" },
+    { "id": 12, "name": "Pushback and Towing Certification" }
+]
