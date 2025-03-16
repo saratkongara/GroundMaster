@@ -1,7 +1,7 @@
 import logging
 from ortools.sat.python import cp_model
 from .result import Result
-from .models import Flight, Service, Staff
+from .models import Flight, Service, Staff, ServiceType
 from typing import List
 
 # Configure logging
@@ -23,6 +23,7 @@ class Scheduler:
 
         self.add_constraints()
         self.add_staff_count_constraints()
+        self.add_flight_level_service_constraints()
 
         self.maximize_service_assignments()
 
@@ -98,6 +99,43 @@ class Scheduler:
                 # Add constraint: Sum of assigned staff should not exceed max_count
                 logging.debug(f"Adding staff count constraint for flight {flight.number}, service {service_id}: max {max_count}")
                 self.model.Add(sum(service_assignments) <= max_count)
+
+    def add_flight_level_service_constraints(self):
+        """
+        Ensure that staff can take multiple FlightLevel (F) services on the same flight 
+        only if they do not conflict (based on excludes_services).
+        """
+
+        logging.debug("Adding FlightLevel (F) service constraints...")
+
+        # Precompute service details lookup by service_id
+        service_lookup = {service.id: service for service in self.services}
+
+        for flight in self.flights:
+            # Get FlightLevel (F) services for this flight
+            flight_services = [
+                flight_service for flight_service in flight.flight_services 
+                if service_lookup[flight_service.id].type == ServiceType.FLIGHT_LEVEL
+            ]
+
+            for staff in self.roster:
+                # Collect assignment variables for all F services on this flight for a selected staff member
+                assigned_services = {
+                    flight_service.id: self.assignments[(flight.number, flight_service.id, staff.id)]
+                    for flight_service in flight_services
+                }
+
+                # Apply conflict constraints based on exclude_services rule
+                for flight_service_b in flight_services:
+                    service_b = service_lookup[flight_service_b.id]
+
+                    for flight_service_a in flight_services:
+                        if flight_service_a.id in service_b.exclude_services:  # Corrected rule
+                            var_a = assigned_services[flight_service_a.id]
+                            var_b = assigned_services[flight_service_b.id]
+                            logging.debug(f"Adding conflict constraint: {flight_service_a.id} excluded in {flight_service_b.id} for staff {staff.id} on flight {flight.number}")
+                            self.model.Add(var_a + var_b <= 1)  # Prevent simultaneous assignment
+
 
     def maximize_service_assignments(self):
         # Prioritize staff with fewer certifications
