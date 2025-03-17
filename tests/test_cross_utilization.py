@@ -37,11 +37,13 @@ def test_cross_utilization_with_no_conflict_requirement():
     staff = [
         Staff(
             id=1,
+            name="John Doe",
             certifications=[1,2],
             shifts=[Shift(start="05:00", end="10:00")]  # Certified and available
         ),
         Staff(
             id=2,
+            name="Jane Smith",
             certifications=[1,2],
             shifts=[Shift(start="05:00", end="09:00")]  # Certified and available
         )
@@ -87,11 +89,13 @@ def test_cross_utilization_with_exclude_services_requirement():
     staff = [
         Staff(
             id=1,
+            name="John Doe",
             certifications=[1,2],
             shifts=[Shift(start="05:00", end="10:00")]  # Certified and available
         ),
         Staff(
             id=2,
+            name="Jane Smith",
             certifications=[1,2],
             shifts=[Shift(start="05:00", end="09:00")]  # Certified and available
         )

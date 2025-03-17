@@ -37,11 +37,13 @@ def test_only_one_common_level_service_assignment():
     staff = [
         Staff(
             id=1,
+            name="John Doe",
             certifications=[3,4,8,9],
             shifts=[Shift(start="05:00", end="10:00")]  # Certified and available
         ),
         Staff(
             id=2,
+            name="Jane Smith",
             certifications=[3,4,8,9],
             shifts=[Shift(start="05:00", end="09:00")]  # Certified and available
         )
@@ -87,11 +89,13 @@ def test_no_other_service_is_assigned_when_common_level_service_is_assigned():
     staff = [
         Staff(
             id=1,
+            name="John Doe",
             certifications=[2,3,4],
             shifts=[Shift(start="05:00", end="10:00")]  # Certified and available
         ),
         Staff(
             id=2,
+            name="Jane Smith",
             certifications=[2,3,4],
             shifts=[Shift(start="05:00", end="09:00")]  # Certified and available
         )

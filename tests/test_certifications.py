@@ -28,16 +28,19 @@ def test_single_certification_requirement():
     staff = [
         Staff(
             id=1,
+            name="John Doe",
             certifications=[],
             shifts=[Shift(start="04:00", end="08:00")]  # Available but lacks certification
         ),
         Staff(
             id=2,
+            name="Jane Smith",
             certifications=[1],
             shifts=[Shift(start="06:00", end="10:00")]  # Certified but unavailable at "A-10" (05:20)
         ),
         Staff(
             id=3,
+            name="Mike Johnson",
             certifications=[1],
             shifts=[Shift(start="05:00", end="09:00")]  # Certified and available
         )
@@ -74,16 +77,19 @@ def test_certification_priority_requirement():
     staff = [
         Staff(
             id=1,
+            name="John Doe",
             certifications=[],
             shifts=[Shift(start="04:00", end="08:00")]  # Available but lacks certification
         ),
         Staff(
             id=2,
+            name="Jane Smith",
             certifications=[1],
             shifts=[Shift(start="05:00", end="8:00")]  # Certified and available with 1 certification
         ),
         Staff(
             id=3,
+            name="Mike Johnson",
             certifications=[1, 2],
             shifts=[Shift(start="05:00", end="09:00")]  # Certified and available with 2 certifications
         )

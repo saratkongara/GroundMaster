@@ -37,11 +37,13 @@ def test_only_one_multi_flight_service_assignment():
     staff = [
         Staff(
             id=1,
+            name="John Doe",
             certifications=[7,12],
             shifts=[Shift(start="05:00", end="10:00")]  # Certified and available
         ),
         Staff(
             id=2,
+            name="Jane Smith",
             certifications=[7,12],
             shifts=[Shift(start="05:00", end="09:00")]  # Certified and available
         )
@@ -52,6 +54,10 @@ def test_only_one_multi_flight_service_assignment():
 
     assert solution == Result.FOUND, "Scheduler should find a solution"
     scheduler.get_results()
+
+    schedule = scheduler.generate_schedule()
+    assert len(schedule.allocations) == 1, "Should have 1 schedule"
+    scheduler.display_schedule(schedule)
 
 def test_same_multi_flight_service_assignment_across_flights():
     services = [
@@ -93,11 +99,13 @@ def test_same_multi_flight_service_assignment_across_flights():
     staff = [
         Staff(
             id=1,
+            name="John Doe",
             certifications=[7,12],
             shifts=[Shift(start="05:00", end="10:00")]  # Certified and available
         ),
         Staff(
             id=2,
+            name="Jane Smith",
             certifications=[7,12],
             shifts=[Shift(start="05:00", end="09:00")]  # Certified and available
         )
@@ -108,3 +116,7 @@ def test_same_multi_flight_service_assignment_across_flights():
 
     assert solution == Result.FOUND, "Scheduler should find a solution"
     scheduler.get_results()
+    
+    schedule = scheduler.generate_schedule()
+    assert len(schedule.allocations) == 2, "Should have 2 schedules"
+    scheduler.display_schedule(schedule)

@@ -28,11 +28,13 @@ def test_single_shift_requirement():
     staff = [
         Staff(
             id=1,
+            name="John Doe",
             certifications=[1],
             shifts=[Shift(start="06:00", end="10:00")]  # Certified but unavailable at "A-10" (05:20)
         ),
         Staff(
             id=2,
+            name="Jane Smith",
             certifications=[1],
             shifts=[Shift(start="05:00", end="09:00")]  # Certified and available
         )
@@ -69,11 +71,13 @@ def test_multiple_shift_requirement():
     staff = [
         Staff(
             id=1,
+            name="John Doe",
             certifications=[1],
             shifts=[Shift(start="04:00", end="07:00"), Shift(start="10:00", end="11:00")]  # Certified and available in the second shift
         ),
         Staff(
             id=2,
+            name="Jane Smith",
             certifications=[1],
             shifts=[Shift(start="05:00", end="09:00")]  # Certified and unavailable
         )

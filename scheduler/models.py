@@ -64,6 +64,7 @@ class Shift:
 @dataclass
 class Staff:
     id: int
+    name: str
     certifications: List[int]  # List of certification IDs
     shifts: List[Shift]
 
@@ -79,3 +80,27 @@ class Staff:
                 return True  # Found a shift that fully covers the service
 
         return False  # No shift covers the service time
+
+@dataclass
+class StaffAssignment:
+    staff_id: int
+    staff_name: str
+
+@dataclass
+class FlightServiceAssignment:
+    service_id: int
+    service_name: str
+    assigned_staff: List[StaffAssignment]
+
+
+@dataclass
+class FlightAllocation:
+    flight_number: str
+    arrival: str
+    departure: str
+    services: List[FlightServiceAssignment]
+
+
+@dataclass
+class Schedule:
+    allocations: List[FlightAllocation]

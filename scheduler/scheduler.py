@@ -2,7 +2,8 @@ import logging
 from ortools.sat.python import cp_model
 from .result import Result
 from .models import Flight, Service, Staff, ServiceType
-from typing import List
+from .models import Schedule, FlightAllocation, FlightServiceAssignment, StaffAssignment
+from typing import Dict, List
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG, format="%(levelname)s: %(message)s")
@@ -15,8 +16,11 @@ class Scheduler:
         self.model = cp_model.CpModel()
         self.solver = cp_model.CpSolver()
         self.assignments = {}
-        # Precompute service details lookup by service_id
-        self.service_lookup = {service.id: service for service in services}
+
+        # Precompute lookup maps
+        self.flight_map = {flight.number: flight for flight in self.flights}
+        self.staff_map = {staff.id: staff for staff in self.roster}
+        self.service_map = {service.id: service for service in services}
 
     def solve(self):
         """Solve the staff allocation optimization problem."""
@@ -116,7 +120,7 @@ class Scheduler:
             # Get FlightLevel (F) services for this flight
             flight_services = [
                 flight_service for flight_service in flight.flight_services 
-                if self.service_lookup[flight_service.id].type == ServiceType.FLIGHT_LEVEL
+                if self.service_map[flight_service.id].type == ServiceType.FLIGHT_LEVEL
             ]
 
             for staff in self.roster:
@@ -128,7 +132,7 @@ class Scheduler:
 
                 # Apply conflict constraints based on exclude_services rule
                 for flight_service_b in flight_services:
-                    service_b = self.service_lookup[flight_service_b.id]
+                    service_b = self.service_map[flight_service_b.id]
 
                     for flight_service_a in flight_services:
                         if flight_service_a.id in service_b.exclude_services:  # Corrected rule
@@ -154,7 +158,7 @@ class Scheduler:
                 common_level_vars = [
                     assigned_services[fs.id]
                     for fs in flight_services
-                    if self.service_lookup[fs.id].type == ServiceType.COMMON_LEVEL
+                    if self.service_map[fs.id].type == ServiceType.COMMON_LEVEL
                 ]
 
                 if common_level_vars:
@@ -190,7 +194,7 @@ class Scheduler:
                 multiflight_vars = [
                     assigned_services[fs.id]
                     for fs in flight_services
-                    if self.service_lookup[fs.id].type == ServiceType.MULTI_FLIGHT
+                    if self.service_map[fs.id].type == ServiceType.MULTI_FLIGHT
                 ]
 
                 if multiflight_vars:
@@ -220,7 +224,7 @@ class Scheduler:
                 }
                 
                 for fs in flight_services:
-                    service = self.service_lookup[fs.id]
+                    service = self.service_map[fs.id]
                     if service.type == ServiceType.MULTI_FLIGHT:
                         if fs.id not in staff_multiflight_assignments[staff.id]:
                             staff_multiflight_assignments[staff.id][fs.id] = []
@@ -255,6 +259,59 @@ class Scheduler:
 
         # Combine both objectives with a weight factor
         self.model.Maximize(weighted_assignments + total_assignments)
+
+    def generate_schedule(self) -> Schedule:
+        """Generates a schedule based on solver results."""
+        allocations: Dict[str, FlightAllocation] = {}
+
+        for (flight_number, service_id, staff_id), var in self.assignments.items():
+            if self.solver.Value(var):  # If the staff is assigned to the service
+                flight = self.flight_map[flight_number]
+                service = self.service_map[service_id]
+                staff = self.staff_map[staff_id]
+
+                # Create or get existing FlightAllocation
+                if flight_number not in allocations:
+                    allocations[flight_number] = FlightAllocation(
+                        flight_number=flight.number,
+                        arrival=flight.arrival,
+                        departure=flight.departure,
+                        services=[]
+                    )
+
+                flight_allocation = allocations[flight_number]
+
+                # Find or create FlightServiceAssignment
+                service_assignment = next(
+                    (s for s in flight_allocation.services if s.service_id == service_id),
+                    None
+                )
+                if not service_assignment:
+                    service_assignment = FlightServiceAssignment(
+                        service_id=service.id,
+                        service_name=service.name,
+                        assigned_staff=[]
+                    )
+                    flight_allocation.services.append(service_assignment)
+
+                # Add staff assignment
+                service_assignment.assigned_staff.append(StaffAssignment(
+                    staff_id=staff.id,
+                    staff_name=staff.name
+                ))
+
+        return Schedule(allocations=list(allocations.values()))
+
+    def display_schedule(self, schedule: Schedule):
+        """Displays the generated schedule flight-wise in a readable format."""
+        print("\n=== Services Schedule ===\n")
+        for allocation in schedule.allocations:
+            print(f"Flight {allocation.flight_number} | Arrival: {allocation.arrival} | Departure: {allocation.departure}")
+            print("-" * 60)
+            for service in allocation.services:
+                staff_names = ", ".join([s.staff_name for s in service.assigned_staff])
+                print(f"  {service.service_name.ljust(25)} : {staff_names if staff_names else 'No staff assigned'}")
+            print("\n")
 
     def get_results(self):
         """Extract assignment results."""
