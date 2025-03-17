@@ -40,7 +40,7 @@ def test_service_count_requirement():
         ),
         Staff(
             id=3,
-            name="Mike Johnson"
+            name="Mike Johnson",
             certifications=[3,4],
             shifts=[Shift(start="05:00", end="09:00")]  # Certified and available
         )
