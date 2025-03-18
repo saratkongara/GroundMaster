@@ -200,17 +200,16 @@ class Scheduler:
                     if self.service_map[fs.id].type != ServiceType.MULTI_FLIGHT
                 ]
 
-                if multiflight_vars:
-                    # 🚀 **Boolean variable to track if at least one MultiFlight service is assigned**
-                    has_multiflight_service = self.model.NewBoolVar(f"staff_{staff.id}_multiflight_flight_{flight.number}")
+                # Rule 1: A staff member **cannot be assigned more than one MultiFlight service** on the same flight
+                self.model.Add(sum(multiflight_vars) <= 1)
 
-                    # 🚀 **Ensure `has_multiflight_service` is 1 if any MultiFlight service is assigned**
-                    self.model.AddMaxEquality(has_multiflight_service, multiflight_vars)
+                # Rule 2: If a MultiFlight service is assigned, **no other services can be assigned** on this flight
+                for multiflight_var in multiflight_vars:
+                    for non_multiflight_var in non_multiflight_vars:
+                        self.model.Add(multiflight_var + non_multiflight_var <= 1)
 
-                    # 🚀 **If a staff has a MultiFlight service, no other services can be assigned on this flight**
-                    for var in non_multiflight_vars:
-                        self.model.Add(var == 0).OnlyEnforceIf(has_multiflight_service)
-
+        logging.debug("✅ MultiFlight (M) service constraints added for individual flights.")
+       
         # Step 2: Track MultiFlight assignments across flights
         staff_multiflight_assignments = {staff.id: {} for staff in self.roster}
 
