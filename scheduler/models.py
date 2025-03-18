@@ -90,6 +90,7 @@ class StaffAssignment:
 class FlightServiceAssignment:
     service_id: int
     service_name: str
+    service_type: str
     assigned_staff: List[StaffAssignment]
 
 

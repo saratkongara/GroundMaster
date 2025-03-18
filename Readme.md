@@ -13,7 +13,7 @@ Clone the repo
     source venv/bin/activate
     pip3 install -r requirements.txt
 
-    python3 allocator.py
+    python3 -m scheduler.main
 ```
 
 The direct dependencies which are installed are:

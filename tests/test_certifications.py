@@ -126,16 +126,19 @@ def test_multiple_certifications_requirement():
     staff = [
         Staff(
             id=1,
+            name="John Doe",
             certifications=[5],
             shifts=[Shift(start="04:00", end="08:00")]  # Available with 1 missing certification
         ),
         Staff(
             id=2,
+            name="Jane Smith",
             certifications=[1,5,6],
             shifts=[Shift(start="05:00", end="8:00")]  # Available with additional certifications
         ),
         Staff(
             id=3,
+            name="Mike Johnson",
             certifications=[5,6],
             shifts=[Shift(start="05:00", end="09:00")]  # Available with exact certifications
         )

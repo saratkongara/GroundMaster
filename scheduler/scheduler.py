@@ -1,8 +1,8 @@
 import logging
 from ortools.sat.python import cp_model
-from .result import Result
-from .models import Flight, Service, Staff, ServiceType
-from .models import Schedule, FlightAllocation, FlightServiceAssignment, StaffAssignment
+from scheduler.result import Result
+from scheduler.models import Flight, Service, Staff, ServiceType
+from scheduler.models import Schedule, FlightAllocation, FlightServiceAssignment, StaffAssignment
 from typing import Dict, List
 
 # Configure logging
@@ -31,7 +31,7 @@ class Scheduler:
         self.add_staff_count_constraints()
         self.add_flight_level_service_constraints()
         self.add_common_level_service_constraints()
-        self.add_multiflight_service_constraints()
+        #self.add_multiflight_service_constraints()
 
         self.maximize_service_assignments()
 
@@ -142,109 +142,105 @@ class Scheduler:
                             self.model.Add(var_a + var_b <= 1)  # Prevent simultaneous assignment
 
     def add_common_level_service_constraints(self):
-        """Ensure that staff assigned to a Common Level (C) service cannot be assigned to any other service on the same flight."""
+        """Ensure that:
+        1. If a staff member is assigned to a Common Level (C) service on a flight, they cannot be assigned to any other service on the same flight.
+        2. A staff member cannot be assigned to more than one Common Level service on the same flight.
+        """
         logging.debug("Adding Common Level (C) service constraints...")
 
         for flight in self.flights:
-            flight_services = flight.flight_services  # List of flight service assignments
-
             for staff in self.roster:
-                assigned_services = {
-                    fs.id: self.assignments[(flight.number, fs.id, staff.id)]
-                    for fs in flight_services
-                }
-
-                # Identify the Common Level (C) services
+                # Collect assignment variables for Common Level (C) services
                 common_level_vars = [
-                    assigned_services[fs.id]
-                    for fs in flight_services
+                    self.assignments[(flight.number, fs.id, staff.id)]
+                    for fs in flight.flight_services
                     if self.service_map[fs.id].type == ServiceType.COMMON_LEVEL
                 ]
 
-                if common_level_vars:
-                    # Indicator variable: is staff assigned to at least one Common Level service?
-                    is_assigned_common = self.model.NewBoolVar(f"staff_{staff.id}_common_level_flight_{flight.number}")
+                # Collect assignment variables for non-Common Level services
+                non_common_level_vars = [
+                    self.assignments[(flight.number, fs.id, staff.id)]
+                    for fs in flight.flight_services
+                    if self.service_map[fs.id].type != ServiceType.COMMON_LEVEL
+                ]
 
-                    # Enforce the common level assignment logic
-                    self.model.Add(sum(common_level_vars) == 1).OnlyEnforceIf(is_assigned_common)
-                    self.model.Add(sum(common_level_vars) == 0).OnlyEnforceIf(is_assigned_common.Not())
+                # Rule 2: A staff member cannot be assigned to more than one Common Level service on the same flight
+                self.model.Add(sum(common_level_vars) <= 1)
 
-                    # If assigned a Common Level service, no other services should be assigned
-                    self.model.Add(sum(assigned_services.values()) == 1).OnlyEnforceIf(is_assigned_common)
+                # Rule 1: If any Common Level service is assigned, no other services can be assigned
+                for common_var in common_level_vars:
+                    for non_common_var in non_common_level_vars:
+                        self.model.Add(common_var + non_common_var <= 1)
 
-                    logging.debug(f"Adding Common Level constraint: Staff {staff.id} cannot be assigned multiple services on flight {flight.number}.")
+        logging.debug("✅ Common Level (C) service constraints added.")
 
     def add_multiflight_service_constraints(self):
-        """Ensure that staff assigned a MultiFlight (M) service cannot take any other service on the same flight 
-        and can only take the same MultiFlight service across multiple flights."""
-        
+        """Ensure staff assigned a MultiFlight (M) service:
+        - Cannot take any other service on the same flight.
+        - Can only take the same MultiFlight service across multiple flights.
+        - Cannot be assigned multiple different MultiFlight services.
+        """
+
         logging.debug("Adding MultiFlight (M) service constraints...")
 
         # Step 1: Enforce MultiFlight constraints within the same flight
         for flight in self.flights:
-            flight_services = flight.flight_services  # List of flight service assignments
-
             for staff in self.roster:
-                assigned_services = {
-                    fs.id: self.assignments[(flight.number, fs.id, staff.id)]
-                    for fs in flight_services
-                }
-
-                # Identify the MultiFlight (M) services
+                # Collect assignment variables for MultiFlight (M) services
                 multiflight_vars = [
-                    assigned_services[fs.id]
-                    for fs in flight_services
+                    self.assignments[(flight.number, fs.id, staff.id)]
+                    for fs in flight.flight_services
                     if self.service_map[fs.id].type == ServiceType.MULTI_FLIGHT
                 ]
 
+                # Collect assignment variables for non-MultiFlight services
+                non_multiflight_vars = [
+                    self.assignments[(flight.number, fs.id, staff.id)]
+                    for fs in flight.flight_services
+                    if self.service_map[fs.id].type != ServiceType.MULTI_FLIGHT
+                ]
+
                 if multiflight_vars:
-                    # Indicator variable: Is the staff assigned at least one MultiFlight service on this flight?
-                    is_assigned_multiflight = self.model.NewBoolVar(f"staff_{staff.id}_multiflight_flight_{flight.number}")
+                    # 🚀 **Boolean variable to track if at least one MultiFlight service is assigned**
+                    has_multiflight_service = self.model.NewBoolVar(f"staff_{staff.id}_multiflight_flight_{flight.number}")
 
-                    # Enforce the MultiFlight assignment logic
-                    self.model.Add(sum(multiflight_vars) == 1).OnlyEnforceIf(is_assigned_multiflight)
-                    self.model.Add(sum(multiflight_vars) == 0).OnlyEnforceIf(is_assigned_multiflight.Not())
+                    # 🚀 **Ensure `has_multiflight_service` is 1 if any MultiFlight service is assigned**
+                    self.model.AddMaxEquality(has_multiflight_service, multiflight_vars)
 
-                    # If assigned a MultiFlight service, no other services should be assigned
-                    self.model.Add(sum(assigned_services.values()) == 1).OnlyEnforceIf(is_assigned_multiflight)
+                    # 🚀 **If a staff has a MultiFlight service, no other services can be assigned on this flight**
+                    for var in non_multiflight_vars:
+                        self.model.Add(var == 0).OnlyEnforceIf(has_multiflight_service)
 
-                    logging.debug(f"MultiFlight constraint: Staff {staff.id} can only be assigned one MultiFlight service on flight {flight.number}.")
-
-        # Step 2: Build MultiFlight assignments for cross-flight enforcement
-        staff_multiflight_assignments = {
-            staff.id: {} for staff in self.roster
-        }
+        # Step 2: Track MultiFlight assignments across flights
+        staff_multiflight_assignments = {staff.id: {} for staff in self.roster}
 
         for flight in self.flights:
             for staff in self.roster:
-                flight_services = flight.flight_services
-                assigned_services = {
-                    fs.id: self.assignments[(flight.number, fs.id, staff.id)]
-                    for fs in flight_services
-                }
-                
-                for fs in flight_services:
+                for fs in flight.flight_services:
                     service = self.service_map[fs.id]
                     if service.type == ServiceType.MULTI_FLIGHT:
+                        var = self.assignments[(flight.number, fs.id, staff.id)]
                         if fs.id not in staff_multiflight_assignments[staff.id]:
                             staff_multiflight_assignments[staff.id][fs.id] = []
-                        staff_multiflight_assignments[staff.id][fs.id].append(assigned_services[fs.id])
+                        staff_multiflight_assignments[staff.id][fs.id].append(var)
 
         # Step 3: Enforce cross-flight consistency for MultiFlight services
         for staff_id, service_assignments in staff_multiflight_assignments.items():
             service_vars = [self.model.NewBoolVar(f"staff_{staff_id}_assigned_multiflight_{service_id}") 
                             for service_id in service_assignments]
 
-            # Ensure that staff can only be assigned **ONE** MultiFlight service across all flights
+            # 🚀 **Ensure staff is assigned at most ONE MultiFlight service across all flights**
             self.model.Add(sum(service_vars) <= 1)
 
             for idx, (service_id, assignments) in enumerate(service_assignments.items()):
-                # If a staff member is assigned this MultiFlight service on any flight, they must be assigned it on at least one flight
+                # 🚀 **Ensure staff is assigned the same MultiFlight service across flights**
                 self.model.Add(sum(assignments) >= 1).OnlyEnforceIf(service_vars[idx])
                 self.model.Add(sum(assignments) == 0).OnlyEnforceIf(service_vars[idx].Not())
 
-                logging.debug(f"Enforcing MultiFlight service consistency: "
-                            f"Staff {staff_id} can only be assigned MultiFlight service {service_id} across flights.")
+                logging.debug(f"✅ Enforcing MultiFlight service consistency: Staff {staff_id} can only be assigned MultiFlight service {service_id} across flights.")
+
+        logging.debug("✅ MultiFlight (M) service constraints added.")
+
 
     def maximize_service_assignments(self):
         # Prioritize staff with fewer certifications
@@ -261,44 +257,50 @@ class Scheduler:
         self.model.Maximize(weighted_assignments + total_assignments)
 
     def generate_schedule(self) -> Schedule:
-        """Generates a schedule based on solver results."""
+        """Generates a complete schedule including all services for all flights.
+        If no staff is assigned to a service, it will still be included with an empty staff list.
+        """
         allocations: Dict[str, FlightAllocation] = {}
 
+        # Step 1: Iterate over all flights and services to initialize schedule
+        for flight in self.flights:
+            flight_allocation = FlightAllocation(
+                flight_number=flight.number,
+                arrival=flight.arrival,
+                departure=flight.departure,
+                services=[]
+            )
+
+            for flight_service in flight.flight_services:
+                service = self.service_map[flight_service.id]
+
+                # Create a FlightServiceAssignment with an empty staff list
+                service_assignment = FlightServiceAssignment(
+                    service_id=service.id,
+                    service_name=service.name,
+                    service_type=service.type.value,
+                    assigned_staff=[]
+                )
+
+                flight_allocation.services.append(service_assignment)
+
+            allocations[flight.number] = flight_allocation
+
+        # Step 2: Iterate over assignments and populate assigned staff
         for (flight_number, service_id, staff_id), var in self.assignments.items():
             if self.solver.Value(var):  # If the staff is assigned to the service
-                flight = self.flight_map[flight_number]
-                service = self.service_map[service_id]
-                staff = self.staff_map[staff_id]
-
-                # Create or get existing FlightAllocation
-                if flight_number not in allocations:
-                    allocations[flight_number] = FlightAllocation(
-                        flight_number=flight.number,
-                        arrival=flight.arrival,
-                        departure=flight.departure,
-                        services=[]
-                    )
-
                 flight_allocation = allocations[flight_number]
-
-                # Find or create FlightServiceAssignment
                 service_assignment = next(
                     (s for s in flight_allocation.services if s.service_id == service_id),
                     None
                 )
-                if not service_assignment:
-                    service_assignment = FlightServiceAssignment(
-                        service_id=service.id,
-                        service_name=service.name,
-                        assigned_staff=[]
-                    )
-                    flight_allocation.services.append(service_assignment)
 
-                # Add staff assignment
-                service_assignment.assigned_staff.append(StaffAssignment(
-                    staff_id=staff.id,
-                    staff_name=staff.name
-                ))
+                if service_assignment:
+                    staff = self.staff_map[staff_id]
+                    service_assignment.assigned_staff.append(StaffAssignment(
+                        staff_id=staff.id,
+                        staff_name=staff.name
+                    ))
 
         return Schedule(allocations=list(allocations.values()))
 
@@ -309,8 +311,8 @@ class Scheduler:
             print(f"Flight {allocation.flight_number} | Arrival: {allocation.arrival} | Departure: {allocation.departure}")
             print("-" * 60)
             for service in allocation.services:
-                staff_names = ", ".join([s.staff_name for s in service.assigned_staff])
-                print(f"  {service.service_name.ljust(25)} : {staff_names if staff_names else 'No staff assigned'}")
+                staff_names = ", ".join([f"{s.staff_name} ({s.staff_id})" for s in service.assigned_staff])
+                print(f"  {service.service_name.ljust(25)}({service.service_type}) : {staff_names if staff_names else 'No staff assigned'}")
             print("\n")
 
     def get_results(self):
