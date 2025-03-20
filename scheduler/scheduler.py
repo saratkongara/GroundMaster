@@ -25,15 +25,10 @@ class Scheduler:
     def solve(self):
         """Solve the staff allocation optimization problem."""
         logging.info("Starting to solve the allocation problem...")
+        
         self.create_variables()
-
         self.add_constraints()
-        self.add_staff_count_constraints()
-        self.add_flight_level_service_constraints()
-        self.add_common_level_service_constraints()
-        #self.add_multiflight_service_constraints()
-
-        self.maximize_service_assignments()
+        self.set_objective()
 
         status = self.solver.Solve(self.model)
         if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
@@ -57,6 +52,10 @@ class Scheduler:
     def add_constraints(self):
         self.add_certification_constraints()
         self.add_availability_constraints()
+        self.add_staff_count_constraints()
+        self.add_flight_level_service_constraints()
+        self.add_common_level_service_constraints()
+        self.add_multiflight_service_constraints()
 
     def add_certification_constraints(self):
         """Add certification constraints. If the staff does not have all the certifications required for a service, then set the assignment decision variable to 0"""
@@ -241,7 +240,7 @@ class Scheduler:
         logging.debug("✅ MultiFlight (M) service constraints added.")
 
 
-    def maximize_service_assignments(self):
+    def set_objective(self):
         # Prioritize staff with fewer certifications
         weighted_assignments = sum(
             var * (1 / max(len(staff.certifications), 1))  # Higher weight for fewer certifications
@@ -254,6 +253,9 @@ class Scheduler:
 
         # Combine both objectives with a weight factor
         self.model.Maximize(weighted_assignments + total_assignments)
+
+        # Maximize total assignments
+        #self.model.Maximize(sum(self.assignments.values()))
 
     def generate_schedule(self) -> Schedule:
         """Generates a complete schedule including all services for all flights.
