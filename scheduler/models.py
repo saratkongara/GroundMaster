@@ -92,7 +92,7 @@ class FlightServiceAssignment:
     service_name: str
     service_type: str
     assigned_staff: List[StaffAssignment]
-
+    required_staff_count: int
 
 @dataclass
 class FlightAllocation:

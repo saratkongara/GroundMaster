@@ -2,6 +2,7 @@ import pytest
 from scheduler.scheduler import Scheduler
 from scheduler.result import Result
 from scheduler.models import Service, ServiceType, Flight, FlightService, Staff, Shift
+from tests.utils import validate_schedule
 
 def test_single_shift_requirement():
     services = [
@@ -44,7 +45,9 @@ def test_single_shift_requirement():
     solution = scheduler.solve()
 
     assert solution == Result.FOUND, "Scheduler should find a solution"
-    scheduler.get_results()
+
+    schedule = scheduler.generate_schedule()
+    validate_schedule(schedule)
 
 def test_multiple_shift_requirement():
     services = [
@@ -87,4 +90,6 @@ def test_multiple_shift_requirement():
     solution = scheduler.solve()
 
     assert solution == Result.FOUND, "Scheduler should find a solution"
-    scheduler.get_results()
+   
+    schedule = scheduler.generate_schedule()
+    validate_schedule(schedule)

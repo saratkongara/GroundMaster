@@ -2,6 +2,7 @@ import pytest
 from scheduler.scheduler import Scheduler
 from scheduler.result import Result
 from scheduler.models import Service, ServiceType, Flight, FlightService, Staff, Shift
+from tests.utils import validate_schedule
 
 def test_only_one_common_level_service_assignment():
     services = [
@@ -53,7 +54,9 @@ def test_only_one_common_level_service_assignment():
     solution = scheduler.solve()
 
     assert solution == Result.FOUND, "Scheduler should find a solution"
-    scheduler.get_results()
+    
+    schedule = scheduler.generate_schedule()
+    validate_schedule(schedule)
 
 def test_no_other_service_is_assigned_when_common_level_service_is_assigned():
     services = [
@@ -105,4 +108,6 @@ def test_no_other_service_is_assigned_when_common_level_service_is_assigned():
     solution = scheduler.solve()
 
     assert solution == Result.FOUND, "Scheduler should find a solution"
-    scheduler.get_results()
+    
+    schedule = scheduler.generate_schedule()
+    validate_schedule(schedule)

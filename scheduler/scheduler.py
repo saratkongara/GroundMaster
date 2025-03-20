@@ -280,7 +280,8 @@ class Scheduler:
                     service_id=service.id,
                     service_name=service.name,
                     service_type=service.type.value,
-                    assigned_staff=[]
+                    assigned_staff=[],
+                    required_staff_count=flight_service.count
                 )
 
                 flight_allocation.services.append(service_assignment)

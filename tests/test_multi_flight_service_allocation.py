@@ -2,6 +2,7 @@ import pytest
 from scheduler.scheduler import Scheduler
 from scheduler.result import Result
 from scheduler.models import Service, ServiceType, Flight, FlightService, Staff, Shift
+from tests.utils import validate_schedule
 
 def test_only_one_multi_flight_service_assignment():
     services = [
@@ -53,11 +54,12 @@ def test_only_one_multi_flight_service_assignment():
     solution = scheduler.solve()
 
     assert solution == Result.FOUND, "Scheduler should find a solution"
-    scheduler.get_results()
 
     schedule = scheduler.generate_schedule()
-    assert len(schedule.allocations) == 1, "Should have 1 schedule"
     scheduler.display_schedule(schedule)
+
+    assert len(schedule.allocations) == 1, "Should have 1 schedule"
+    validate_schedule(schedule)
 
 def test_same_multi_flight_service_assignment_across_flights():
     services = [
@@ -115,8 +117,9 @@ def test_same_multi_flight_service_assignment_across_flights():
     solution = scheduler.solve()
 
     assert solution == Result.FOUND, "Scheduler should find a solution"
-    scheduler.get_results()
     
     schedule = scheduler.generate_schedule()
-    assert len(schedule.allocations) == 2, "Should have 2 schedules"
     scheduler.display_schedule(schedule)
+
+    assert len(schedule.allocations) == 2, "Should have 2 schedules"
+    validate_schedule(schedule)
