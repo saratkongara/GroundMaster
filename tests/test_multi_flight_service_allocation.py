@@ -55,8 +55,8 @@ def test_only_one_multi_flight_service_assignment():
 
     assert solution == Result.FOUND, "Scheduler should find a solution"
 
-    schedule = scheduler.generate_schedule()
-    scheduler.display_schedule(schedule)
+    schedule = scheduler.get_schedule()
+    schedule.display()
 
     assert len(schedule.allocations) == 1, "Should have 1 schedule"
     validate_schedule(schedule)
@@ -118,8 +118,8 @@ def test_same_multi_flight_service_assignment_across_flights():
 
     assert solution == Result.FOUND, "Scheduler should find a solution"
     
-    schedule = scheduler.generate_schedule()
-    scheduler.display_schedule(schedule)
+    schedule = scheduler.get_schedule()
+    schedule.display()
 
     assert len(schedule.allocations) == 2, "Should have 2 schedules"
     validate_schedule(schedule)

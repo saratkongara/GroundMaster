@@ -52,5 +52,5 @@ def test_service_count_requirement():
 
     assert solution == Result.FOUND, "Scheduler should find a solution"
 
-    schedule = scheduler.generate_schedule()
+    schedule = scheduler.get_schedule()
     validate_schedule(schedule)

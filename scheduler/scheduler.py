@@ -3,6 +3,7 @@ from ortools.sat.python import cp_model
 from scheduler.result import Result
 from scheduler.models import Flight, Service, Staff, ServiceType
 from scheduler.models import Schedule, FlightAllocation, FlightServiceAssignment, StaffAssignment
+from scheduler.allocation_plan import AllocationPlan
 from typing import Dict, List
 
 # Configure logging
@@ -257,7 +258,15 @@ class Scheduler:
         # Maximize total assignments
         #self.model.Maximize(sum(self.assignments.values()))
 
-    def generate_schedule(self) -> Schedule:
+    def get_allocation_plan(self) -> AllocationPlan:
+        allocation_plan = AllocationPlan()
+        
+        for (flight_number, service_id, staff_id), var in self.assignments.items():
+           allocation_plan.add_allocation(flight_number, service_id, staff_id, bool(self.solver.Value(var)))
+
+        return allocation_plan
+
+    def get_schedule(self) -> Schedule:
         """Generates a complete schedule including all services for all flights.
         If no staff is assigned to a service, it will still be included with an empty staff list.
         """
@@ -305,17 +314,6 @@ class Scheduler:
                     ))
 
         return Schedule(allocations=list(allocations.values()))
-
-    def display_schedule(self, schedule: Schedule):
-        """Displays the generated schedule flight-wise in a readable format."""
-        print("\n=== Services Schedule ===\n")
-        for allocation in schedule.allocations:
-            print(f"Flight {allocation.flight_number} | Arrival: {allocation.arrival} | Departure: {allocation.departure}")
-            print("-" * 60)
-            for service in allocation.services:
-                staff_names = ", ".join([f"{s.staff_name} ({s.staff_id})" for s in service.assigned_staff])
-                print(f"  {service.service_name.ljust(25)}({service.service_type}) : {staff_names if staff_names else 'No staff assigned'}")
-            print("\n")
 
     def get_results(self):
         """Extract assignment results."""

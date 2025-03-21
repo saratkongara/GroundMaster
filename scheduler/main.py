@@ -45,7 +45,7 @@ def run():
     solution = scheduler.solve()
 
     if solution == Result.FOUND:
-        schedule = scheduler.generate_schedule()
+        schedule = scheduler.get_schedule()
         scheduler.display_schedule(schedule)
 
 if __name__ == "__main__":

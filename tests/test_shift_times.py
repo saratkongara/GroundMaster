@@ -46,7 +46,7 @@ def test_single_shift_requirement():
 
     assert solution == Result.FOUND, "Scheduler should find a solution"
 
-    schedule = scheduler.generate_schedule()
+    schedule = scheduler.get_schedule()
     validate_schedule(schedule)
 
 def test_multiple_shift_requirement():
@@ -91,5 +91,5 @@ def test_multiple_shift_requirement():
 
     assert solution == Result.FOUND, "Scheduler should find a solution"
    
-    schedule = scheduler.generate_schedule()
+    schedule = scheduler.get_schedule()
     validate_schedule(schedule)

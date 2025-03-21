@@ -52,7 +52,7 @@ def test_single_certification_requirement():
 
     assert solution == Result.FOUND, "Scheduler should find a solution"
 
-    schedule = scheduler.generate_schedule()
+    schedule = scheduler.get_schedule()
     validate_schedule(schedule)
 
 def test_certification_priority_requirement():
@@ -103,7 +103,7 @@ def test_certification_priority_requirement():
 
     assert solution == Result.FOUND, "Scheduler should find a solution"
    
-    schedule = scheduler.generate_schedule()
+    schedule = scheduler.get_schedule()
     validate_schedule(schedule)
 
 
@@ -155,5 +155,5 @@ def test_multiple_certifications_requirement():
 
     assert solution == Result.FOUND, "Scheduler should find a solution"
       
-    schedule = scheduler.generate_schedule()
+    schedule = scheduler.get_schedule()
     validate_schedule(schedule)
