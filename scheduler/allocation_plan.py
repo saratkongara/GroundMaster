@@ -53,6 +53,6 @@ class AllocationPlan:
     def get_allocation(self, flight_number, service_id, staff_id):
         """
         Get the allocation value for the given flight number, service_id, and staff_id.
-        Returns None if any key is missing in the nested dictionary.
+        Returns False if any key is missing in the nested dictionary.
         """
-        return self.allocations.get(flight_number, {}).get(service_id, {}).get(staff_id, None)
+        return self.allocations.get(flight_number, {}).get(service_id, {}).get(staff_id, False)

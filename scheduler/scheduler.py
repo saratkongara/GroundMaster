@@ -10,10 +10,11 @@ from typing import Dict, List
 logging.basicConfig(level=logging.DEBUG, format="%(levelname)s: %(message)s")
 
 class Scheduler:
-    def __init__(self, services: List[Service], flights: List[Flight], roster: List[Staff]):
+    def __init__(self, services: List[Service], flights: List[Flight], roster: List[Staff], hints: AllocationPlan = None):
         self.services = services
         self.flights = flights
         self.roster = roster
+        self.hints = hints
         self.model = cp_model.CpModel()
         self.solver = cp_model.CpSolver()
         self.assignments = {}
@@ -48,6 +49,13 @@ class Scheduler:
                     key = (flight.number, flight_service.id, staff.id)
                     self.assignments[key] = self.model.NewBoolVar(f"assigned_{key}")
                     logging.debug(f"Created variable: assigned_{key}")
+
+                    # Apply hints if provided
+                    if self.hints:
+                        hint = self.hints.get_allocation(flight.number, flight_service.id, staff.id)
+                        if hint:
+                            logging.debug(f"Applying hint: {hint} for key: {key}")
+                            self.model.AddHint(self.assignments[key], 1)
 
 
     def add_constraints(self):
