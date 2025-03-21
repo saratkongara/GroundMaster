@@ -65,6 +65,7 @@ class Scheduler:
         self.add_flight_level_service_constraints()
         self.add_common_level_service_constraints()
         self.add_multiflight_service_constraints()
+        self.add_flight_transition_constraints()
 
     def add_certification_constraints(self):
         """Add certification constraints. If the staff does not have all the certifications required for a service, then set the assignment decision variable to 0"""
@@ -248,6 +249,42 @@ class Scheduler:
 
         logging.debug("✅ MultiFlight (M) service constraints added.")
 
+    def add_flight_transition_constraints(self):
+        """Ensure staff can complete a service on one flight before moving to the next flight."""
+        logging.debug("Adding flight transition constraints...")
+
+        for staff in self.roster:
+            for flight1 in self.flights:
+                for flight2 in self.flights:
+                    if flight1.number == flight2.number:
+                        continue  # Skip same flight
+
+                    for flight_service1 in flight1.flight_services:
+                        for flight_service2 in flight2.flight_services:
+                            service1 = self.service_map[flight_service1.id]
+                            service2 = self.service_map[flight_service2.id]
+
+                            # Get absolute service times
+                            service1_start, service1_end = flight1.get_service_time(service1.start, service1.end)
+                            service2_start, service2_end = flight2.get_service_time(service2.start, service2.end)
+
+                            # Log service times for debugging
+                            # logging.debug(
+                            #     f"Checking transition for staff {staff.id}: "
+                            #     f"Flight {flight1.number} Service {service1.id} ({service1_start}-{service1_end}) vs "
+                            #     f"Flight {flight2.number} Service {service2.id} ({service2_start}-{service2_end})"
+                            # )
+
+                            # Check for overlap
+                            if service1_start < service2_end and service1_end > service2_start:
+                                var1 = self.assignments[(flight1.number, service1.id, staff.id)]
+                                var2 = self.assignments[(flight2.number, service2.id, staff.id)]
+                                logging.debug(
+                                    f"Conflict detected: Staff {staff.id} cannot be assigned to "
+                                    f"service {service2.id} on flight {flight2.number} before completing "
+                                    f"service {service1.id} on flight {flight1.number}"
+                                )
+                                self.model.Add(var1 + var2 <= 1)
 
     def set_objective(self):
         # Prioritize staff with fewer certifications

@@ -74,8 +74,8 @@ def test_rescheduling_for_delayed_flight():
         ),
         Flight(
             number="DL109",
-            arrival="10:30",
-            departure="11:45",
+            arrival="10:45",
+            departure="12:00",
             flight_services=[FlightService(id=1, count=1),FlightService(id=2, count=1),FlightService(id=3, count=1),FlightService(id=4, count=1),FlightService(id=5, count=1)]
         )
     ]
@@ -118,13 +118,16 @@ def test_rescheduling_for_delayed_flight():
     #assert len(schedule.allocations) == 2, "Should have 2 schedules"
     validate_schedule(schedule)
 
-    # Assume DL107 is delayed by 30 minutes
+    # Assume DL107 is delayed by 30, notification received at 9:00 AM
     allocation_plan = scheduler.get_allocation_plan()
     allocation_plan.remove_flight("DL107")
 
-    flights[2].arrival = "10:30"
-    flights[2].departure = "11:45"
+    # Remove the flights from the past and change the arrival and departure time of the delayed flight
+    flights = flights[2:]
+    flights[0].arrival = "10:00"
+    flights[0].departure = "11:15"
 
+    # Do incremental scheduling passing the hints from the previously generated schedule
     scheduler = Scheduler(services, flights, staff, allocation_plan)
     solution = scheduler.solve()
 
