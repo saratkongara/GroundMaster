@@ -6,6 +6,12 @@ from scheduler.models import Schedule, FlightAllocation, FlightServiceAssignment
 from scheduler.allocation_plan import AllocationPlan
 from typing import Dict, List
 
+# This class uses Google OR Tools to create a schedule for dynamic ground staff allocation to flights for different above and below the wing services
+# The key entities are certificate, staff, service, flight. The roster has the list of staff members with their shifts and certifications.
+# The services is a list of service objects with start and end times described relative to Arrival(A) and Departure(D) times of the flight
+# The flights is a list of flight objects with number, arrival and departure times along with flight services
+# The flight service is an object linking the flight to the service, it includes the flight number, service id and the number of resources need for this service on the flight
+
 # Configure logging
 logging.basicConfig(level=logging.DEBUG, format="%(levelname)s: %(message)s")
 
@@ -119,7 +125,7 @@ class Scheduler:
 
     def add_flight_level_service_constraints(self):
         """
-        Ensure that staff can take multiple FlightLevel (F) services on the same flight 
+        Ensure that staff can take multiple FlightLevel (F) services (cross utilization) on the same flight 
         only if they do not conflict (based on excludes_services).
         """
 
@@ -279,11 +285,11 @@ class Scheduler:
                             if service1_start < service2_end and service1_end > service2_start:
                                 var1 = self.assignments[(flight1.number, service1.id, staff.id)]
                                 var2 = self.assignments[(flight2.number, service2.id, staff.id)]
-                                logging.debug(
-                                    f"Conflict detected: Staff {staff.id} cannot be assigned to "
-                                    f"service {service2.id} on flight {flight2.number} before completing "
-                                    f"service {service1.id} on flight {flight1.number}"
-                                )
+                                # logging.debug(
+                                #     f"Conflict detected: Staff {staff.id} cannot be assigned to "
+                                #     f"service {service2.id} on flight {flight2.number} before completing "
+                                #     f"service {service1.id} on flight {flight1.number}"
+                                # )
                                 self.model.Add(var1 + var2 <= 1)
 
     def set_objective(self):
