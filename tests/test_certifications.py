@@ -1,7 +1,7 @@
 import pytest
 from scheduler.scheduler import Scheduler
 from scheduler.result import Result
-from scheduler.models import Service, ServiceType, Flight, FlightService, Staff, Shift
+from scheduler.models import Service, ServiceType, Flight, FlightService, Staff, Shift, CertificationRequirement
 from tests.utils import validate_schedule
 
 def test_single_certification_requirement():
@@ -12,8 +12,10 @@ def test_single_certification_requirement():
             start="A-10",
             end="A+15",
             certifications=[1],
+            certification_requirement=CertificationRequirement.ALL,
             type=ServiceType.FLIGHT_LEVEL,
-            exclude_services=[]
+            exclude_services=[],
+            cross_utilization_limit=2
         )
     ]
     
@@ -63,8 +65,10 @@ def test_certification_priority_requirement():
             start="A-10",
             end="A+15",
             certifications=[1],
+            certification_requirement=CertificationRequirement.ALL,
             type=ServiceType.FLIGHT_LEVEL,
-            exclude_services=[]
+            exclude_services=[],
+            cross_utilization_limit=2
         )
     ]
     
@@ -107,7 +111,7 @@ def test_certification_priority_requirement():
     validate_schedule(schedule)
 
 
-def test_multiple_certifications_requirement():
+def test_multiple_certification_requirement():
     services = [
         Service(
             id=1,
@@ -115,8 +119,10 @@ def test_multiple_certifications_requirement():
             start="A+10",
             end="D-30",
             certifications=[5,6],
+            certification_requirement=CertificationRequirement.ALL,
             type=ServiceType.FLIGHT_LEVEL,
-            exclude_services=[]
+            exclude_services=[],
+            cross_utilization_limit=1
         )
     ]
     

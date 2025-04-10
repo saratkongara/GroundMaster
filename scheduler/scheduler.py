@@ -2,7 +2,7 @@ import logging
 from ortools.sat.python import cp_model
 from scheduler.result import Result
 from scheduler.models import Flight, Service, Staff, ServiceType
-from scheduler.models import Schedule, FlightAllocation, FlightServiceAssignment, StaffAssignment
+from scheduler.models import Schedule, FlightAllocation, FlightServiceAssignment, StaffAssignment, CertificationRequirement
 from scheduler.allocation_plan import AllocationPlan
 from typing import Dict, List
 
@@ -74,14 +74,21 @@ class Scheduler:
         self.add_flight_transition_constraints()
 
     def add_certification_constraints(self):
-        """Add certification constraints. If the staff does not have all the certifications required for a service, then set the assignment decision variable to 0"""
+        """Add certification constraints based on the certification requirement (ALL or ANY)."""
         for (_, service_id, staff_id), var in self.assignments.items():
             service = next(service for service in self.services if service.id == service_id)
             staff = next(staff for staff in self.roster if staff.id == staff_id)
-            
-            if not all(cert in staff.certifications for cert in service.certifications):
-                logging.debug(f"Staff {staff_id} not certified for service {service_id}, setting var {var} to 0")
-                self.model.Add(var == 0)
+
+            if service.certification_requirement == CertificationRequirement.ALL:
+                # Staff must have all required certifications
+                if not all(cert in staff.certifications for cert in service.certifications):
+                    logging.debug(f"Staff {staff_id} does not meet ALL certifications for service {service_id}, setting var {var} to 0")
+                    self.model.Add(var == 0)
+            elif service.certification_requirement == CertificationRequirement.ANY:
+                # Staff must have at least one of the required certifications
+                if not any(cert in staff.certifications for cert in service.certifications):
+                    logging.debug(f"Staff {staff_id} does not meet ANY certifications for service {service_id}, setting var {var} to 0")
+                    self.model.Add(var == 0)
 
     def add_availability_constraints(self):
         """Ensure staff are only assigned to services they are available for."""

@@ -13,6 +13,10 @@ class ServiceType(Enum):
     COMMON_LEVEL = "C"
     MULTI_FLIGHT = "M"
 
+class CertificationRequirement(Enum):
+    ALL = "All"
+    ANY = "Any"
+
 @dataclass
 class Service:
     id: int
@@ -20,7 +24,9 @@ class Service:
     start: str
     end: str
     certifications: List[int]  # List of certification IDs
+    certification_requirement: CertificationRequirement
     type: ServiceType
+    cross_utilization_limit: int
     exclude_services: List[int] = field(default_factory=list)
 
 @dataclass
