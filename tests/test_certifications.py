@@ -9,8 +9,6 @@ def test_single_certification_requirement():
         Service(
             id=1,
             name="Toilet Cleaning",
-            start="A-10",
-            end="A+15",
             certifications=[1],
             certification_requirement=CertificationRequirement.ALL,
             type=ServiceType.FLIGHT_LEVEL,
@@ -24,7 +22,7 @@ def test_single_certification_requirement():
             number="DL101",
             arrival="05:30",
             departure="06:45",
-            flight_services=[FlightService(id=1, count=1)]
+            flight_services=[FlightService(id=1, count=1, start="A-10", end="A+15")]
         )
     ]
     
@@ -62,8 +60,6 @@ def test_certification_priority_requirement():
         Service(
             id=1,
             name="Toilet Cleaning",
-            start="A-10",
-            end="A+15",
             certifications=[1],
             certification_requirement=CertificationRequirement.ALL,
             type=ServiceType.FLIGHT_LEVEL,
@@ -77,7 +73,7 @@ def test_certification_priority_requirement():
             number="DL101",
             arrival="05:30",
             departure="06:45",
-            flight_services=[FlightService(id=1, count=1)]
+            flight_services=[FlightService(id=1, count=1, start="A-10", end="A+15")]
         )
     ]
     
@@ -116,8 +112,6 @@ def test_multiple_certification_requirement():
         Service(
             id=1,
             name="Baggage Loading",
-            start="A+10",
-            end="D-30",
             certifications=[5,6],
             certification_requirement=CertificationRequirement.ALL,
             type=ServiceType.FLIGHT_LEVEL,
@@ -131,7 +125,7 @@ def test_multiple_certification_requirement():
             number="DL101",
             arrival="05:30",
             departure="06:45",
-            flight_services=[FlightService(id=1, count=1)]
+            flight_services=[FlightService(id=1, count=1, start="A+10", end="D-30")]
         )
     ]
     

@@ -1,7 +1,7 @@
 import pytest
 from scheduler.scheduler import Scheduler
 from scheduler.result import Result
-from scheduler.models import Service, ServiceType, Flight, FlightService, Staff, Shift
+from scheduler.models import Service, ServiceType, Flight, FlightService, Staff, Shift, CertificationRequirement
 from tests.utils import validate_schedule
 
 def test_service_count_requirement():
@@ -9,11 +9,11 @@ def test_service_count_requirement():
         Service(
             id=1,
             name="Refueling",
-            start="A+5",
-            end="D-15",
             certifications=[3,4],
+            certification_requirement=CertificationRequirement.ALL,
             type=ServiceType.COMMON_LEVEL,
-            exclude_services=[]
+            exclude_services=[],
+            cross_utilization_limit=1
         )
     ]
     
@@ -22,7 +22,7 @@ def test_service_count_requirement():
             number="DL101",
             arrival="05:30",
             departure="06:45",
-            flight_services=[FlightService(id=1, count=2)]
+            flight_services=[FlightService(id=1, count=2, start="A+5", end="D-15")]
         )
     ]
     

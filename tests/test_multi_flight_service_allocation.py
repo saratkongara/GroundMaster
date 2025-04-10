@@ -1,7 +1,7 @@
 import pytest
 from scheduler.scheduler import Scheduler
 from scheduler.result import Result
-from scheduler.models import Service, ServiceType, Flight, FlightService, Staff, Shift
+from scheduler.models import Service, ServiceType, Flight, FlightService, Staff, Shift, CertificationRequirement
 from tests.utils import validate_schedule
 
 def test_only_one_multi_flight_service_assignment():
@@ -9,20 +9,20 @@ def test_only_one_multi_flight_service_assignment():
         Service(
             id=1,
             name="GPU Service",
-            start="A",
-            end="D",
             certifications=[7],
+            certification_requirement=CertificationRequirement.ALL,
             type=ServiceType.MULTI_FLIGHT,
-            exclude_services=[]
+            exclude_services=[],
+            cross_utilization_limit=0
         ),
         Service(
             id=2,
             name="Pushback",
-            start="D-10",
-            end="D",
             certifications=[12],
+            certification_requirement=CertificationRequirement.ALL,
             type=ServiceType.MULTI_FLIGHT,
-            exclude_services=[]
+            exclude_services=[],
+            cross_utilization_limit=0
         )
     ]
     
@@ -31,7 +31,7 @@ def test_only_one_multi_flight_service_assignment():
             number="DL101",
             arrival="05:30",
             departure="06:45",
-            flight_services=[FlightService(id=1, count=1), FlightService(id=2, count=1)]
+            flight_services=[FlightService(id=1, count=1, start="A", end="D"), FlightService(id=2, count=1, start="D-10", end="D")]
         )
     ]
     
@@ -66,20 +66,20 @@ def test_same_multi_flight_service_assignment_across_flights():
         Service(
             id=1,
             name="GPU Service",
-            start="A",
-            end="D",
             certifications=[7],
+            certification_requirement=CertificationRequirement.ALL,
             type=ServiceType.MULTI_FLIGHT,
-            exclude_services=[]
+            exclude_services=[],
+            cross_utilization_limit=0
         ),
         Service(
             id=2,
             name="Pushback",
-            start="D-10",
-            end="D",
             certifications=[12],
+            certification_requirement=CertificationRequirement.ALL,
             type=ServiceType.MULTI_FLIGHT,
-            exclude_services=[]
+            exclude_services=[],
+            cross_utilization_limit=0
         )
     ]
     
@@ -88,13 +88,13 @@ def test_same_multi_flight_service_assignment_across_flights():
             number="DL101",
             arrival="05:30",
             departure="06:45",
-            flight_services=[FlightService(id=1, count=1), FlightService(id=2, count=1)]
+            flight_services=[FlightService(id=1, count=1, start="A", end="D"), FlightService(id=2, count=1, start="D-10", end="D")]
         ),
         Flight(
             number="DL102",
             arrival="07:00",
             departure="08:45",
-            flight_services=[FlightService(id=1, count=1), FlightService(id=2, count=1)]
+            flight_services=[FlightService(id=1, count=1, start="A", end="D"), FlightService(id=2, count=1, start="D-10", end="D")]
         )
     ]
     

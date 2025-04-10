@@ -21,8 +21,6 @@ class CertificationRequirement(Enum):
 class Service:
     id: int
     name: str
-    start: str
-    end: str
     certifications: List[int]  # List of certification IDs
     certification_requirement: CertificationRequirement
     type: ServiceType
@@ -32,7 +30,9 @@ class Service:
 @dataclass
 class FlightService:
     id: int
-    count: int
+    count: int  # Number of staff required for this service
+    start: str  # Start time relative to flight (e.g., "A+10")
+    end: str    # End time relative to flight (e.g., "D-5")
 
 @dataclass
 class Flight:

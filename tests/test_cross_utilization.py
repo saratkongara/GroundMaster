@@ -1,7 +1,7 @@
 import pytest
 from scheduler.scheduler import Scheduler
 from scheduler.result import Result
-from scheduler.models import Service, ServiceType, Flight, FlightService, Staff, Shift
+from scheduler.models import Service, ServiceType, Flight, FlightService, Staff, Shift, CertificationRequirement
 from tests.utils import validate_schedule
 
 def test_cross_utilization_with_no_conflict_requirement():
@@ -9,20 +9,20 @@ def test_cross_utilization_with_no_conflict_requirement():
         Service(
             id=1,
             name="Toilet Cleaning",
-            start="A-10",
-            end="A+15",
             certifications=[1],
+            certification_requirement=CertificationRequirement.ALL,
             type=ServiceType.FLIGHT_LEVEL,
-            exclude_services=[]
+            exclude_services=[],
+            cross_utilization_limit=2
         ),
         Service(
             id=2,
             name="Water Cart Service",
-            start="A-10",
-            end="A+10",
             certifications=[2],
+            certification_requirement=CertificationRequirement.ALL,
             type=ServiceType.FLIGHT_LEVEL,
-            exclude_services=[]
+            exclude_services=[],
+            cross_utilization_limit=2
         )
     ]
     
@@ -31,7 +31,7 @@ def test_cross_utilization_with_no_conflict_requirement():
             number="DL101",
             arrival="05:30",
             departure="06:45",
-            flight_services=[FlightService(id=1, count=1), FlightService(id=2, count=1)]
+            flight_services=[FlightService(id=1, count=1, start="A-10", end="A+15"), FlightService(id=2, count=1, start="A-10", end="A+10")]
         )
     ]
     
@@ -63,20 +63,20 @@ def test_cross_utilization_with_exclude_services_requirement():
         Service(
             id=1,
             name="Toilet Cleaning",
-            start="A-10",
-            end="A+15",
             certifications=[1],
+            certification_requirement=CertificationRequirement.ALL,
             type=ServiceType.FLIGHT_LEVEL,
-            exclude_services=[]
+            exclude_services=[],
+            cross_utilization_limit=2
         ),
         Service(
             id=2,
             name="Water Cart Service",
-            start="A-10",
-            end="A+10",
             certifications=[2],
+            certification_requirement=CertificationRequirement.ALL,
             type=ServiceType.FLIGHT_LEVEL,
-            exclude_services=[1]
+            exclude_services=[1],
+            cross_utilization_limit=2
         )
     ]
     
@@ -85,7 +85,7 @@ def test_cross_utilization_with_exclude_services_requirement():
             number="DL101",
             arrival="05:30",
             departure="06:45",
-            flight_services=[FlightService(id=1, count=1), FlightService(id=2, count=1)]
+            flight_services=[FlightService(id=1, count=1, start="A-10", end="A+15"), FlightService(id=2, count=1, start="A-10", end="A+10")]
         )
     ]
     

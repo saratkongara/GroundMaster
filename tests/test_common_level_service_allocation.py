@@ -1,7 +1,7 @@
 import pytest
 from scheduler.scheduler import Scheduler
 from scheduler.result import Result
-from scheduler.models import Service, ServiceType, Flight, FlightService, Staff, Shift
+from scheduler.models import Service, ServiceType, Flight, FlightService, Staff, Shift, CertificationRequirement
 from tests.utils import validate_schedule
 
 def test_only_one_common_level_service_assignment():
@@ -9,20 +9,20 @@ def test_only_one_common_level_service_assignment():
         Service(
             id=1,
             name="Refueling",
-            start="A+5",
-            end="D-15",
             certifications=[3,4],
+            certification_requirement=CertificationRequirement.ALL,
             type=ServiceType.COMMON_LEVEL,
-            exclude_services=[]
+            exclude_services=[],
+            cross_utilization_limit=0
         ),
         Service(
             id=2,
             name="Team Lead On-Block",
-            start="A",
-            end="D",
             certifications=[8,9],
+            certification_requirement=CertificationRequirement.ALL,
             type=ServiceType.COMMON_LEVEL,
-            exclude_services=[]
+            exclude_services=[],
+            cross_utilization_limit=0
         )
     ]
     
@@ -31,7 +31,7 @@ def test_only_one_common_level_service_assignment():
             number="DL101",
             arrival="05:30",
             departure="06:45",
-            flight_services=[FlightService(id=1, count=1), FlightService(id=2, count=1)]
+            flight_services=[FlightService(id=1, count=1, start="A+5", end="D-15"), FlightService(id=2, count=1, start="A", end="D")]
         )
     ]
     
@@ -63,20 +63,20 @@ def test_no_other_service_is_assigned_when_common_level_service_is_assigned():
         Service(
             id=1,
             name="Refueling",
-            start="A+5",
-            end="D-15",
             certifications=[3,4],
+            certification_requirement=CertificationRequirement.ALL,
             type=ServiceType.COMMON_LEVEL,
-            exclude_services=[]
+            exclude_services=[],
+            cross_utilization_limit=0
         ),
         Service(
             id=2,
             name="Water Cart Service",
-            start="A-10",
-            end="A+10",
             certifications=[2],
+            certification_requirement=CertificationRequirement.ALL,
             type=ServiceType.FLIGHT_LEVEL,
-            exclude_services=[]
+            exclude_services=[],
+            cross_utilization_limit=2
         )
     ]
     
@@ -85,7 +85,7 @@ def test_no_other_service_is_assigned_when_common_level_service_is_assigned():
             number="DL101",
             arrival="05:30",
             departure="06:45",
-            flight_services=[FlightService(id=1, count=1), FlightService(id=2, count=1)]
+            flight_services=[FlightService(id=1, count=1, start="A+5", end="D-15"), FlightService(id=2, count=1, start="A-10", end="A+10")]
         )
     ]
     

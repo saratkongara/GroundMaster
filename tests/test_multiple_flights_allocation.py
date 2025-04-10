@@ -1,7 +1,7 @@
 import pytest
 from scheduler.scheduler import Scheduler
 from scheduler.result import Result
-from scheduler.models import Service, ServiceType, Flight, FlightService, Staff, Shift
+from scheduler.models import Service, ServiceType, Flight, FlightService, Staff, Shift, CertificationRequirement
 from tests.utils import validate_schedule
 
 def test_all_service_types_assignment_across_multiple_flights():
@@ -9,47 +9,47 @@ def test_all_service_types_assignment_across_multiple_flights():
         Service(
             id=1,
             name="GPU Service",
-            start="A",
-            end="D",
             certifications=[7],
+            certification_requirement=CertificationRequirement.ALL,
             type=ServiceType.MULTI_FLIGHT,
-            exclude_services=[]
+            exclude_services=[],
+            cross_utilization_limit=0
         ),
         Service(
             id=2,
             name="Refueling",
-            start="A+5",
-            end="D-15",
             certifications=[3,4],
+            certification_requirement=CertificationRequirement.ALL,
             type=ServiceType.COMMON_LEVEL,
-            exclude_services=[]
+            exclude_services=[],
+            cross_utilization_limit=0
         ),
         Service(
             id=3,
             name="Toilet Cleaning",
-            start="A-10",
-            end="A+15",
             certifications=[1],
+            certification_requirement=CertificationRequirement.ALL,
             type=ServiceType.FLIGHT_LEVEL,
-            exclude_services=[]
+            exclude_services=[],
+            cross_utilization_limit=2
         ),
         Service(
             id=4,
             name="Water Cart Service",
-            start="A-10",
-            end="A+10",
             certifications=[2],
+            certification_requirement=CertificationRequirement.ALL,
             type=ServiceType.FLIGHT_LEVEL,
-            exclude_services=[]
+            exclude_services=[],
+            cross_utilization_limit=2
         ),
         Service(
             id=5,
             name="Baggage Loading",
-            start="A+10",
-            end="D-30",
             certifications=[5,6],
+            certification_requirement=CertificationRequirement.ALL,
             type=ServiceType.FLIGHT_LEVEL,
-            exclude_services=[3,4]
+            exclude_services=[3,4],
+            cross_utilization_limit=1
         )
     ]
     
@@ -58,13 +58,13 @@ def test_all_service_types_assignment_across_multiple_flights():
             number="DL101",
             arrival="05:30",
             departure="06:45",
-            flight_services=[FlightService(id=1, count=1),FlightService(id=2, count=1),FlightService(id=3, count=1),FlightService(id=4, count=1),FlightService(id=5, count=1)]
+            flight_services=[FlightService(id=1, count=1, start="A", end="D"),FlightService(id=2, count=1, start="A+5", end="D-15"),FlightService(id=3, count=1, start="A-10", end="A+15"),FlightService(id=4, count=1, start="A-10", end="A+10"),FlightService(id=5, count=1, start="A+10", end="D-30")]
         ),
         Flight(
             number="DL104",
             arrival="7:00",
             departure="9:15",
-            flight_services=[FlightService(id=1, count=1),FlightService(id=2, count=1),FlightService(id=3, count=1),FlightService(id=4, count=1),FlightService(id=5, count=1)]
+            flight_services=[FlightService(id=1, count=1, start="A", end="D"),FlightService(id=2, count=1, start="A+5", end="D-15"),FlightService(id=3, count=1, start="A-10", end="A+15"),FlightService(id=4, count=1, start="A-10", end="A+10"),FlightService(id=5, count=1, start="A+10", end="D-30")]
         )
     ]
     

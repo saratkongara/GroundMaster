@@ -94,11 +94,11 @@ class Scheduler:
         """Ensure staff are only assigned to services they are available for."""
         for (flight_number, service_id, staff_id), var in self.assignments.items():
             flight = next(flight for flight in self.flights if flight.number == flight_number)
-            service = next(service for service in self.services if service.id == service_id)
+            flight_service = next(flight_service for flight_service in flight.flight_services if flight_service.id == service_id)
             staff = next(staff for staff in self.roster if staff.id == staff_id)
 
             # Get absolute service start and end times for the flight
-            service_start, service_end = flight.get_service_time(service.start, service.end)
+            service_start, service_end = flight.get_service_time(flight_service.start, flight_service.end)
 
             # Check staff availability
             if not staff.is_available_for_service(service_start, service_end):
@@ -140,7 +140,7 @@ class Scheduler:
 
         for flight in self.flights:
             # Get FlightLevel (F) services for this flight
-            flight_services = [
+            flight_level_services = [
                 flight_service for flight_service in flight.flight_services 
                 if self.service_map[flight_service.id].type == ServiceType.FLIGHT_LEVEL
             ]
@@ -149,19 +149,46 @@ class Scheduler:
                 # Collect assignment variables for all F services on this flight for a selected staff member
                 assigned_services = {
                     flight_service.id: self.assignments[(flight.number, flight_service.id, staff.id)]
-                    for flight_service in flight_services
+                    for flight_service in flight_level_services
                 }
 
                 # Apply conflict constraints based on exclude_services rule
-                for flight_service_b in flight_services:
-                    service_b = self.service_map[flight_service_b.id]
+                for flight_level_service_b in flight_level_services:
+                    service_b = self.service_map[flight_level_service_b.id]
 
-                    for flight_service_a in flight_services:
-                        if flight_service_a.id in service_b.exclude_services:  # Corrected rule
-                            var_a = assigned_services[flight_service_a.id]
-                            var_b = assigned_services[flight_service_b.id]
-                            logging.debug(f"Adding conflict constraint: {flight_service_a.id} excluded in {flight_service_b.id} for staff {staff.id} on flight {flight.number}")
+                    for flight_level_service_a in flight_level_services:
+                        if flight_level_service_a.id in service_b.exclude_services:  # Corrected rule
+                            var_a = assigned_services[flight_level_service_a.id]
+                            var_b = assigned_services[flight_level_service_b.id]
+                            logging.debug(f"Adding exclude services conflict constraint: {flight_level_service_a.id} excluded in {flight_level_service_b.id} for staff {staff.id} on flight {flight.number}")
                             self.model.Add(var_a + var_b <= 1)  # Prevent simultaneous assignment
+
+                # Apply cross_utilization_limit constraints
+                for flight_level_service in flight_level_services:
+                    service = self.service_map[flight_level_service.id]
+                    cross_utilization_limit = service.cross_utilization_limit
+
+                # Collect all other FlightLevel services for this staff member on the same flight
+                # which can potentially be assigned to this staff member along with the current service
+                # This is done to ensure that the staff member does not exceed the cross_utilization_limit
+                # for the current service
+                # Exclude the current flight_level_service from the list
+                # Also exclude any services that are in the exclude_services list of the current service
+                # or services that exclude the current service
+                other_service_vars = [
+                    assigned_services[other_service.id]
+                    for other_service in flight_level_services
+                    if other_service.id != flight_level_service.id
+                    and flight_level_service.id not in self.service_map[other_service.id].exclude_services
+                    and other_service.id not in self.service_map[flight_level_service.id].exclude_services
+                ]
+
+                # Add constraint to ensure the staff member does not exceed the cross_utilization_limit
+                if other_service_vars:
+                    self.model.Add(
+                        assigned_services[flight_level_service.id] + sum(other_service_vars) <= cross_utilization_limit
+                    )
+                    logging.debug(f"Adding cross utilization constraint: Staff {staff.id} on flight {flight.number} for service {flight_level_service.id} with limit {cross_utilization_limit}")
 
     def add_common_level_service_constraints(self):
         """Ensure that:
@@ -186,10 +213,10 @@ class Scheduler:
                     if self.service_map[fs.id].type != ServiceType.COMMON_LEVEL
                 ]
 
-                # Rule 2: A staff member cannot be assigned to more than one Common Level service on the same flight
+                # Rule 1: A staff member cannot be assigned to more than one Common Level service on the same flight
                 self.model.Add(sum(common_level_vars) <= 1)
 
-                # Rule 1: If any Common Level service is assigned, no other services can be assigned
+                # Rule 2: If any Common Level service is assigned, no other services can be assigned
                 for common_var in common_level_vars:
                     for non_common_var in non_common_level_vars:
                         self.model.Add(common_var + non_common_var <= 1)
@@ -222,10 +249,10 @@ class Scheduler:
                     if self.service_map[fs.id].type != ServiceType.MULTI_FLIGHT
                 ]
 
-                # Rule 1: A staff member **cannot be assigned more than one MultiFlight service** on the same flight
+                # Rule 1: A staff member cannot be assigned more than one MultiFlight service on the same flight
                 self.model.Add(sum(multiflight_vars) <= 1)
 
-                # Rule 2: If a MultiFlight service is assigned, **no other services can be assigned** on this flight
+                # Rule 2: If a MultiFlight service is assigned, no other services can be assigned on this flight
                 for multiflight_var in multiflight_vars:
                     for non_multiflight_var in non_multiflight_vars:
                         self.model.Add(multiflight_var + non_multiflight_var <= 1)
@@ -250,11 +277,11 @@ class Scheduler:
             service_vars = [self.model.NewBoolVar(f"staff_{staff_id}_assigned_multiflight_{service_id}") 
                             for service_id in service_assignments]
 
-            # 🚀 **Ensure staff is assigned at most ONE MultiFlight service across all flights**
+            # Ensure staff is assigned at most ONE MultiFlight service across all flights
             self.model.Add(sum(service_vars) <= 1)
 
             for idx, (service_id, assignments) in enumerate(service_assignments.items()):
-                # 🚀 **Ensure staff is assigned the same MultiFlight service across flights**
+                # Ensure staff is assigned the same MultiFlight service across flights
                 self.model.Add(sum(assignments) >= 1).OnlyEnforceIf(service_vars[idx])
                 self.model.Add(sum(assignments) == 0).OnlyEnforceIf(service_vars[idx].Not())
 
@@ -263,41 +290,41 @@ class Scheduler:
         logging.debug("✅ MultiFlight (M) service constraints added.")
 
     def add_flight_transition_constraints(self):
-        """Ensure staff can complete a service on one flight before moving to the next flight."""
+        """
+        Add constraints to ensure staff transitions between flights are valid.
+        MultiFlight services are exempt from overlapping time checks, as staff can handle them across flights simultaneously.
+        """
         logging.debug("Adding flight transition constraints...")
 
         for staff in self.roster:
-            for flight1 in self.flights:
-                for flight2 in self.flights:
-                    if flight1.number == flight2.number:
-                        continue  # Skip same flight
+            for flight_a in self.flights:
+                for flight_b in self.flights:
+                    if flight_a.number == flight_b.number:
+                        continue  # Skip the same flight
 
-                    for flight_service1 in flight1.flight_services:
-                        for flight_service2 in flight2.flight_services:
-                            service1 = self.service_map[flight_service1.id]
-                            service2 = self.service_map[flight_service2.id]
+                    # Get all services for flight_a and flight_b
+                    flight_services_a = flight_a.flight_services
+                    flight_services_b = flight_b.flight_services
 
-                            # Get absolute service times
-                            service1_start, service1_end = flight1.get_service_time(service1.start, service1.end)
-                            service2_start, service2_end = flight2.get_service_time(service2.start, service2.end)
+                    for flight_service_a in flight_services_a:
+                        for flight_service_b in flight_services_b:
+                            # Skip MultiFlight services, as they can overlap across flights
+                            if (self.service_map[flight_service_a.id].type == ServiceType.MULTI_FLIGHT or
+                                    self.service_map[flight_service_b.id].type == ServiceType.MULTI_FLIGHT):
+                                continue
 
-                            # Log service times for debugging
-                            # logging.debug(
-                            #     f"Checking transition for staff {staff.id}: "
-                            #     f"Flight {flight1.number} Service {service1.id} ({service1_start}-{service1_end}) vs "
-                            #     f"Flight {flight2.number} Service {service2.id} ({service2_start}-{service2_end})"
-                            # )
+                            # Get absolute service times for service_a and service_b
+                            service_a_start, service_a_end = flight_a.get_service_time(flight_service_a.start, flight_service_a.end)
+                            service_b_start, service_b_end = flight_b.get_service_time(flight_service_b.start, flight_service_b.end)
 
-                            # Check for overlap
-                            if service1_start < service2_end and service1_end > service2_start:
-                                var1 = self.assignments[(flight1.number, service1.id, staff.id)]
-                                var2 = self.assignments[(flight2.number, service2.id, staff.id)]
-                                # logging.debug(
-                                #     f"Conflict detected: Staff {staff.id} cannot be assigned to "
-                                #     f"service {service2.id} on flight {flight2.number} before completing "
-                                #     f"service {service1.id} on flight {flight1.number}"
-                                # )
-                                self.model.Add(var1 + var2 <= 1)
+                            # Check if the service times overlap
+                            if service_a_end > service_b_start and service_b_end > service_a_start:
+                                # Prevent the same staff from being assigned to overlapping services
+                                var_a = self.assignments.get((flight_a.number, flight_service_a.id, staff.id))
+                                var_b = self.assignments.get((flight_b.number, flight_service_b.id, staff.id))
+                                
+                                logging.debug(f"Adding transition constraint: Staff {staff.id} cannot handle overlapping services {flight_service_a.id} on flight {flight_a.number} and {flight_service_b.id} on flight {flight_b.number}")
+                                self.model.Add(var_a + var_b <= 1)
 
     def set_objective(self):
         # Prioritize staff with fewer certifications
