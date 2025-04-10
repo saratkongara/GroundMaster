@@ -42,7 +42,7 @@ def test_single_shift_requirement():
     ]
 
     scheduler = Scheduler(services, flights, staff)
-    solution = scheduler.solve()
+    solution = scheduler.run()
 
     assert solution == Result.FOUND, "Scheduler should find a solution"
 
@@ -87,7 +87,7 @@ def test_multiple_shift_requirement():
     ]
 
     scheduler = Scheduler(services, flights, staff)
-    solution = scheduler.solve()
+    solution = scheduler.run()
 
     assert solution == Result.FOUND, "Scheduler should find a solution"
    

@@ -51,7 +51,7 @@ def test_only_one_common_level_service_assignment():
     ]
 
     scheduler = Scheduler(services, flights, staff)
-    solution = scheduler.solve()
+    solution = scheduler.run()
 
     assert solution == Result.FOUND, "Scheduler should find a solution"
     
@@ -105,7 +105,7 @@ def test_no_other_service_is_assigned_when_common_level_service_is_assigned():
     ]
 
     scheduler = Scheduler(services, flights, staff)
-    solution = scheduler.solve()
+    solution = scheduler.run()
 
     assert solution == Result.FOUND, "Scheduler should find a solution"
     

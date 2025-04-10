@@ -48,7 +48,7 @@ def test_single_certification_requirement():
     ]
 
     scheduler = Scheduler(services, flights, staff)
-    solution = scheduler.solve()
+    solution = scheduler.run()
 
     assert solution == Result.FOUND, "Scheduler should find a solution"
 
@@ -99,7 +99,7 @@ def test_certification_priority_requirement():
     ]
 
     scheduler = Scheduler(services, flights, staff)
-    solution = scheduler.solve()
+    solution = scheduler.run()
 
     assert solution == Result.FOUND, "Scheduler should find a solution"
    
@@ -151,7 +151,7 @@ def test_multiple_certifications_requirement():
     ]
 
     scheduler = Scheduler(services, flights, staff)
-    solution = scheduler.solve()
+    solution = scheduler.run()
 
     assert solution == Result.FOUND, "Scheduler should find a solution"
       

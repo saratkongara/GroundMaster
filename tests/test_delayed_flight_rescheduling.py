@@ -108,7 +108,7 @@ def test_rescheduling_for_delayed_flight():
     ]
 
     scheduler = Scheduler(services, flights, staff)
-    solution = scheduler.solve()
+    solution = scheduler.run()
 
     assert solution == Result.FOUND, "Scheduler should find a solution"
 
@@ -129,7 +129,7 @@ def test_rescheduling_for_delayed_flight():
 
     # Do incremental scheduling passing the hints from the previously generated schedule
     scheduler = Scheduler(services, flights, staff, allocation_plan)
-    solution = scheduler.solve()
+    solution = scheduler.run()
 
     assert solution == Result.FOUND, "Scheduler should find a solution"
 

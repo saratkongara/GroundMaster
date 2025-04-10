@@ -51,7 +51,7 @@ def test_cross_utilization_with_no_conflict_requirement():
     ]
 
     scheduler = Scheduler(services, flights, staff)
-    solution = scheduler.solve()
+    solution = scheduler.run()
 
     assert solution == Result.FOUND, "Scheduler should find a solution"
     
@@ -105,7 +105,7 @@ def test_cross_utilization_with_exclude_services_requirement():
     ]
 
     scheduler = Scheduler(services, flights, staff)
-    solution = scheduler.solve()
+    solution = scheduler.run()
 
     assert solution == Result.FOUND, "Scheduler should find a solution"
     

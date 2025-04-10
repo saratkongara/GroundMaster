@@ -30,7 +30,7 @@ class Scheduler:
         self.staff_map = {staff.id: staff for staff in self.roster}
         self.service_map = {service.id: service for service in services}
 
-    def solve(self):
+    def run(self):
         """Solve the staff allocation optimization problem."""
         logging.info("Starting to solve the allocation problem...")
         

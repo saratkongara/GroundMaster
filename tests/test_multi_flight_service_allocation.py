@@ -51,7 +51,7 @@ def test_only_one_multi_flight_service_assignment():
     ]
 
     scheduler = Scheduler(services, flights, staff)
-    solution = scheduler.solve()
+    solution = scheduler.run()
 
     assert solution == Result.FOUND, "Scheduler should find a solution"
 
@@ -114,7 +114,7 @@ def test_same_multi_flight_service_assignment_across_flights():
     ]
 
     scheduler = Scheduler(services, flights, staff)
-    solution = scheduler.solve()
+    solution = scheduler.run()
 
     assert solution == Result.FOUND, "Scheduler should find a solution"
     

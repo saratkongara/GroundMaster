@@ -42,7 +42,7 @@ def run():
     roster = load_roster('data/roster.json')
 
     scheduler = Scheduler(services, flights, roster)
-    solution = scheduler.solve()
+    solution = scheduler.run()
 
     if solution == Result.FOUND:
         schedule = scheduler.get_schedule()

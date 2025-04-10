@@ -96,7 +96,7 @@ def test_all_service_types_assignment_across_multiple_flights():
     ]
 
     scheduler = Scheduler(services, flights, staff)
-    solution = scheduler.solve()
+    solution = scheduler.run()
 
     assert solution == Result.FOUND, "Scheduler should find a solution"
 
