@@ -1,7 +1,7 @@
 import pytest
 from scheduler.scheduler import Scheduler
 from scheduler.result import Result
-from scheduler.models import Service, ServiceType, Flight, FlightService, Staff, Shift, CertificationRequirement
+from scheduler.models import Service, ServiceType, Bay, Flight, FlightService, Staff, Shift, CertificationRequirement
 from tests.utils import validate_schedule
 
 def test_only_one_multi_flight_service_assignment():
@@ -26,11 +26,19 @@ def test_only_one_multi_flight_service_assignment():
         )
     ]
     
+    bays = [
+        Bay(number="A1", travel_time={"A2": 10, "B1": 5, "C1": 20}),
+        Bay(number="A2", travel_time={"A1": 10, "B1": 15, "C1": 15}),
+        Bay(number="B1", travel_time={"A1": 5, "A2": 15, "C1": 10}),
+        Bay(number="C1", travel_time={"A1": 20, "A2": 15, "B1": 10}),
+    ]
+
     flights = [
         Flight(
             number="DL101",
             arrival="05:30",
             departure="06:45",
+            bay_number="A1",
             flight_services=[FlightService(id=1, count=1, start="A", end="D"), FlightService(id=2, count=1, start="D-10", end="D")]
         )
     ]
@@ -50,7 +58,7 @@ def test_only_one_multi_flight_service_assignment():
         )
     ]
 
-    scheduler = Scheduler(services, flights, staff)
+    scheduler = Scheduler(services, flights, staff, bays)
     solution = scheduler.run()
 
     assert solution == Result.FOUND, "Scheduler should find a solution"
@@ -83,17 +91,26 @@ def test_same_multi_flight_service_assignment_across_flights():
         )
     ]
     
+    bays = [
+        Bay(number="A1", travel_time={"A2": 10, "B1": 5, "C1": 20}),
+        Bay(number="A2", travel_time={"A1": 10, "B1": 15, "C1": 15}),
+        Bay(number="B1", travel_time={"A1": 5, "A2": 15, "C1": 10}),
+        Bay(number="C1", travel_time={"A1": 20, "A2": 15, "B1": 10}),
+    ]
+
     flights = [
         Flight(
             number="DL101",
             arrival="05:30",
             departure="06:45",
+            bay_number="A1",
             flight_services=[FlightService(id=1, count=1, start="A", end="D"), FlightService(id=2, count=1, start="D-10", end="D")]
         ),
         Flight(
             number="DL102",
             arrival="07:00",
             departure="08:45",
+            bay_number="A2",
             flight_services=[FlightService(id=1, count=1, start="A", end="D"), FlightService(id=2, count=1, start="D-10", end="D")]
         )
     ]
@@ -113,7 +130,7 @@ def test_same_multi_flight_service_assignment_across_flights():
         )
     ]
 
-    scheduler = Scheduler(services, flights, staff)
+    scheduler = Scheduler(services, flights, staff, bays)
     solution = scheduler.run()
 
     assert solution == Result.FOUND, "Scheduler should find a solution"

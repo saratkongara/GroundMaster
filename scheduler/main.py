@@ -1,9 +1,16 @@
 from scheduler.scheduler import Scheduler
 from scheduler.result import Result
-from scheduler.models import Flight, Service, Staff, FlightService, Shift, ServiceType
+from scheduler.models import Bay, Flight, Service, Staff, FlightService, Shift, ServiceType
+from typing import List
 import json
 
-def load_flights(file_path):
+def load_bays(file_path: str) -> List[Bay]:
+    with open(file_path, "r") as f:
+        bays_data = json.load(f)
+
+    return [Bay(number=bay["number"], travel_time=bay["travel_time"]) for bay in bays_data]
+
+def load_flights(file_path: str) -> List[Flight]:
     with open(file_path) as f:
         flights_data = json.load(f)
     
@@ -14,7 +21,7 @@ def load_flights(file_path):
     
     return flights
 
-def load_services(file_path):
+def load_services(file_path: str) -> List[Service]:
     with open(file_path) as f:
         services_data = json.load(f)
 
@@ -25,7 +32,7 @@ def load_services(file_path):
     print(f"SERVICES: {services}")
     return services
 
-def load_roster(file_path):
+def load_roster(file_path: str) -> List[Staff]:
     with open(file_path) as f:
         roster_data = json.load(f)
 
@@ -37,11 +44,13 @@ def load_roster(file_path):
     return roster
 
 def run():
+    bays = load_bays('data/bays.json')
     flights = load_flights('data/flights.json')
     services = load_services('data/services.json')
     roster = load_roster('data/roster.json')
 
-    scheduler = Scheduler(services, flights, roster)
+    print(f"BAYS: {bays}")
+    scheduler = Scheduler(services, flights, roster, bays)
     solution = scheduler.run()
 
     if solution == Result.FOUND:

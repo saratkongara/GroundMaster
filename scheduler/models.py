@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import List
+from typing import List, Dict
 from datetime import datetime, timedelta
 
 @dataclass
@@ -35,11 +35,17 @@ class FlightService:
     end: str    # End time relative to flight (e.g., "D-5")
 
 @dataclass
+class Bay:
+    number: str  # Unique identifier for the bay (e.g., "A1", "B2")
+    travel_time: Dict[str, int]  # Mapping of destination bay numbers to travel durations (in minutes)
+
+@dataclass
 class Flight:
     number: str
     arrival: str
     departure: str
     flight_services: List[FlightService]
+    bay_number: str  # Bay number where the flight is located (e.g., "A1", "B2")
 
     def get_service_time(self, service_start: str, service_end: str) -> tuple[datetime, datetime]:
         """

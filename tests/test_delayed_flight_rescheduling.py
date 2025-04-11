@@ -1,7 +1,7 @@
 import pytest
 from scheduler.scheduler import Scheduler
 from scheduler.result import Result
-from scheduler.models import Service, ServiceType, Flight, FlightService, Staff, Shift, CertificationRequirement
+from scheduler.models import Service, ServiceType, Bay, Flight, FlightService, Staff, Shift, CertificationRequirement
 from tests.utils import validate_schedule
 
 def test_rescheduling_for_delayed_flight():
@@ -53,29 +53,40 @@ def test_rescheduling_for_delayed_flight():
         )
     ]
     
+    bays = [
+        Bay(number="A1", travel_time={"A2": 10, "B1": 5, "C1": 20}),
+        Bay(number="A2", travel_time={"A1": 10, "B1": 15, "C1": 15}),
+        Bay(number="B1", travel_time={"A1": 5, "A2": 15, "C1": 10}),
+        Bay(number="C1", travel_time={"A1": 20, "A2": 15, "B1": 10}),
+    ]
+
     flights = [
         Flight(
             number="DL101",
             arrival="05:30",
             departure="06:45",
+            bay_number="A1",
             flight_services=[FlightService(id=1, count=1, start="A", end="D"),FlightService(id=2, count=1, start="A+5", end="D-15"),FlightService(id=3, count=1, start="A-10", end="A+15"),FlightService(id=4, count=1, start="A-10", end="A+10"),FlightService(id=5, count=1, start="A+10", end="D-30")]
         ),
         Flight(
             number="DL104",
             arrival="7:00",
             departure="8:15",
+            bay_number="A2",
             flight_services=[FlightService(id=1, count=1, start="A", end="D"),FlightService(id=2, count=1, start="A+5", end="D-15"),FlightService(id=3, count=1, start="A-10", end="A+15"),FlightService(id=4, count=1, start="A-10", end="A+10"),FlightService(id=5, count=1, start="A+10", end="D-30")]
         ),
         Flight(
             number="DL107",
             arrival="09:30",
             departure="10:45",
+            bay_number="B1",
             flight_services=[FlightService(id=1, count=1, start="A", end="D"),FlightService(id=2, count=1, start="A+5", end="D-15"),FlightService(id=3, count=1, start="A-10", end="A+15"),FlightService(id=4, count=1, start="A-10", end="A+10"),FlightService(id=5, count=1, start="A+10", end="D-30")]
         ),
         Flight(
             number="DL109",
             arrival="10:45",
             departure="12:00",
+            bay_number="C1",
             flight_services=[FlightService(id=1, count=1, start="A", end="D"),FlightService(id=2, count=1, start="A+5", end="D-15"),FlightService(id=3, count=1, start="A-10", end="A+15"),FlightService(id=4, count=1, start="A-10", end="A+10"),FlightService(id=5, count=1, start="A+10", end="D-30")]
         )
     ]
@@ -107,7 +118,7 @@ def test_rescheduling_for_delayed_flight():
         )
     ]
 
-    scheduler = Scheduler(services, flights, staff)
+    scheduler = Scheduler(services, flights, staff, bays)
     solution = scheduler.run()
 
     assert solution == Result.FOUND, "Scheduler should find a solution"
@@ -128,7 +139,7 @@ def test_rescheduling_for_delayed_flight():
     flights[0].departure = "11:15"
 
     # Do incremental scheduling passing the hints from the previously generated schedule
-    scheduler = Scheduler(services, flights, staff, allocation_plan)
+    scheduler = Scheduler(services, flights, staff, bays, allocation_plan)
     solution = scheduler.run()
 
     assert solution == Result.FOUND, "Scheduler should find a solution"

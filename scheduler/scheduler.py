@@ -1,7 +1,7 @@
 import logging
 from ortools.sat.python import cp_model
 from scheduler.result import Result
-from scheduler.models import Flight, Service, Staff, ServiceType
+from scheduler.models import Flight, Service, Staff, ServiceType, Bay
 from scheduler.models import Schedule, FlightAllocation, FlightServiceAssignment, StaffAssignment, CertificationRequirement
 from scheduler.allocation_plan import AllocationPlan
 from typing import Dict, List
@@ -17,10 +17,11 @@ from datetime import timedelta
 logging.basicConfig(level=logging.DEBUG, format="%(levelname)s: %(message)s")
 
 class Scheduler:
-    def __init__(self, services: List[Service], flights: List[Flight], roster: List[Staff], hints: AllocationPlan = None):
+    def __init__(self, services: List[Service], flights: List[Flight], roster: List[Staff], bays: List[Bay], hints: AllocationPlan = None):
         self.services = services
         self.flights = flights
         self.roster = roster
+        self.bays = {bay.number: bay for bay in bays}
         self.hints = hints
         self.model = cp_model.CpModel()
         self.solver = cp_model.CpSolver()

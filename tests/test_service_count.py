@@ -1,7 +1,7 @@
 import pytest
 from scheduler.scheduler import Scheduler
 from scheduler.result import Result
-from scheduler.models import Service, ServiceType, Flight, FlightService, Staff, Shift, CertificationRequirement
+from scheduler.models import Service, ServiceType, Bay, Flight, FlightService, Staff, Shift, CertificationRequirement
 from tests.utils import validate_schedule
 
 def test_service_count_requirement():
@@ -17,11 +17,19 @@ def test_service_count_requirement():
         )
     ]
     
+    bays = [
+        Bay(number="A1", travel_time={"A2": 10, "B1": 5, "C1": 20}),
+        Bay(number="A2", travel_time={"A1": 10, "B1": 15, "C1": 15}),
+        Bay(number="B1", travel_time={"A1": 5, "A2": 15, "C1": 10}),
+        Bay(number="C1", travel_time={"A1": 20, "A2": 15, "B1": 10}),
+    ]
+
     flights = [
         Flight(
             number="DL101",
             arrival="05:30",
             departure="06:45",
+            bay_number="A1",
             flight_services=[FlightService(id=1, count=2, start="A+5", end="D-15")]
         )
     ]
@@ -47,7 +55,7 @@ def test_service_count_requirement():
         )
     ]
 
-    scheduler = Scheduler(services, flights, staff)
+    scheduler = Scheduler(services, flights, staff, bays)
     solution = scheduler.run()
 
     assert solution == Result.FOUND, "Scheduler should find a solution"
