@@ -73,7 +73,7 @@ class Scheduler:
         self.add_flight_level_service_constraints()
         self.add_common_level_service_constraints()
         self.add_multiflight_service_constraints()
-        self.add_flight_transition_constraints(travel_time=20, overlap_tolerance_buffer=5)
+        self.add_flight_transition_constraints(overlap_tolerance_buffer=15)
 
     def add_certification_constraints(self):
         """Add certification constraints based on the certification requirement (ALL or ANY)."""
@@ -291,16 +291,15 @@ class Scheduler:
 
         logging.debug("✅ MultiFlight (M) service constraints added.")
 
-    def add_flight_transition_constraints(self, travel_time: int, overlap_tolerance_buffer: int):
+    def add_flight_transition_constraints(self, overlap_tolerance_buffer: int):
         """
-        Add constraints to ensure staff transitions between flights are valid.
+        Add constraints to ensure staff transitions between flights are valid using bay-specific travel times.
         MultiFlight services are exempt from overlapping time checks, as staff can handle them across flights simultaneously.
-        
+
         Args:
-            travel_time (int): The time (in minutes) required to travel between flights.
             overlap_tolerance_buffer (int): The allowed buffer (in minutes) for overlapping service times.
         """
-        logging.debug("Adding flight transition constraints with travel time and overlap tolerance buffer...")
+        logging.debug("Adding flight transition constraints with bay-specific travel times...")
 
         for staff in self.roster:
             for flight_a in self.flights:
@@ -308,11 +307,15 @@ class Scheduler:
                     if flight_a.number == flight_b.number:
                         continue  # Skip the same flight
 
+                    # Get the travel time between the bays of flight_a and flight_b
+                    travel_time = 0
+                    if flight_a.bay_number != flight_b.bay_number:
+                        travel_time = self.bays[flight_a.bay_number].travel_time.get(flight_b.bay_number, 0)
+
                     # Get all services for flight_a and flight_b
                     services_a = flight_a.flight_services
                     services_b = flight_b.flight_services
 
-                    # Find the latest service end time on flight_a
                     for service_a in services_a:
                         if self.service_map[service_a.id].type == ServiceType.MULTI_FLIGHT:
                             continue  # Skip MultiFlight services
@@ -333,13 +336,14 @@ class Scheduler:
                                 # Prevent the same staff from being assigned to both services
                                 var_a = self.assignments.get((flight_a.number, service_a.id, staff.id))
                                 var_b = self.assignments.get((flight_b.number, service_b.id, staff.id))
+                                
                                 logging.debug(
-                                        f"Adding transition constraint: Staff {staff.id} cannot handle overlapping services "
-                                        f"{service_a.id} on flight {flight_a.number} and {service_b.id} on flight {flight_b.number} "
-                                        f"with travel time {travel_time} and overlap tolerance {overlap_tolerance_buffer}."
-                                    )
+                                    f"Adding transition constraint: Staff {staff.id} cannot handle overlapping services "
+                                    f"{service_a.id} on flight {flight_a.number} and {service_b.id} on flight {flight_b.number} "
+                                    f"with travel time {travel_time} and overlap tolerance {overlap_tolerance_buffer}."
+                                )
                                 self.model.Add(var_a + var_b <= 1)
-
+                                
     def set_objective(self):
         # Prioritize staff with fewer certifications
         weighted_assignments = sum(
