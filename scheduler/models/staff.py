@@ -27,7 +27,7 @@ class Staff:
 
     def can_perform_service(self, service: Service) -> bool:
         """
-        Checks if staff meets certification requirements for a service.
+        Checks if staff meets certification requirements for a service based on the certification requirement (ALL or ANY).
         """
         if service.certification_requirement == CertificationRequirement.ALL:
             return all(cert in self.certifications for cert in service.certifications)

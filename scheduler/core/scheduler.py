@@ -7,6 +7,7 @@ from scheduler.plans import AllocationPlan
 from typing import Dict, List
 from datetime import timedelta
 from collections import defaultdict
+from scheduler.constraints import AvailabilityConstraint, CertificationConstraint, StaffCountConstraint
 
 # This class uses Google OR Tools to create a schedule for dynamic ground staff allocation to flights for different above and below the wing services
 # The key entities are certificate, staff, service, flight. The roster has the list of staff members with their shifts and certifications.
@@ -39,6 +40,12 @@ class Scheduler:
             for b in self.bays
         }
         self.overlapping_flights_map = self.get_overlapping_flights_map()
+
+        self.constraints = [
+            AvailabilityConstraint(flights, roster),
+            CertificationConstraint(services, roster),
+            StaffCountConstraint(flights, roster)
+        ]
 
     def get_overlapping_flights_map(self):
         """
@@ -156,66 +163,16 @@ class Scheduler:
 
 
     def add_constraints(self):
-        self.add_certification_constraints()
-        self.add_availability_constraints()
-        self.add_staff_count_constraints()
+        # self.add_certification_constraints()
+        # self.add_availability_constraints()
+        # self.add_staff_count_constraints()
+        for constraint in self.constraints:
+            constraint.apply(self.model, self.assignments)
+
         self.add_flight_level_service_constraints()
         self.add_common_level_service_constraints()
         self.add_multiflight_service_constraints()
         self.add_flight_transition_constraints(self.overlap_tolerance_buffer)
-
-    def add_certification_constraints(self):
-        """Add certification constraints based on the certification requirement (ALL or ANY)."""
-        for (_, service_id, staff_id), var in self.assignments.items():
-            service = next(service for service in self.services if service.id == service_id)
-            staff = next(staff for staff in self.roster if staff.id == staff_id)
-
-            if not staff.can_perform_service(service):
-                logging.debug(
-                    f"Staff {staff_id} does not meet {service.certification_requirement.value} "
-                    f"certifications for service {service_id}, setting var {var} to 0"
-                )
-                self.model.Add(var == 0)
-
-    def add_availability_constraints(self):
-        """Ensure staff are only assigned to services they are available for."""
-        for (flight_number, service_id, staff_id), var in self.assignments.items():
-            flight = next(flight for flight in self.flights if flight.number == flight_number)
-            flight_service = next(flight_service for flight_service in flight.flight_services if flight_service.id == service_id)
-            staff = next(staff for staff in self.roster if staff.id == staff_id)
-
-            # Get absolute service start and end times for the flight
-            service_start, service_end = flight.get_service_time(flight_service.start, flight_service.end)
-
-            # Check staff availability
-            if not staff.is_available_for_service(service_start, service_end):
-                logging.debug(f"Staff {staff_id} not available for service {service_id} at flight {flight.number}, setting var {var} to 0")
-                self.model.Add(var == 0)
-    
-    def add_staff_count_constraints(self):
-        """Ensure that at most count staff members are assigned to a service per flight."""
-
-        """
-        Steps to add the constraint
-        ===========================
-        1. Group assignment variables by (flight, service), i.e., collect all BoolVars related to a particular service on a flight.
-        2. Sum them up to ensure that the total number of assigned staff does not exceed the count limit.
-        3. Add a constraint to the OR-Tools model ensuring that the sum does not exceed count.
-        """
-        for flight in self.flights:
-            for flight_service in flight.flight_services:
-                service_id = flight_service.id
-                max_count = flight_service.count  # Max staff allowed for this service
-                
-                # Collect all variables related to this (flight, service)
-                service_assignments = [
-                    self.assignments[(flight.number, service_id, staff.id)]
-                    for staff in self.roster
-                ]
-
-                # Add constraint: Sum of assigned staff should not exceed max_count
-                logging.debug(f"Adding staff count constraint for flight {flight.number}, service {service_id}: max {max_count}")
-                self.model.Add(sum(service_assignments) <= max_count)
 
     def add_flight_level_service_constraints(self):
         """
