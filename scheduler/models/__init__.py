@@ -3,7 +3,7 @@ from .bay import Bay
 from .certification import Certification
 from .flight_service import FlightService
 from .flight import Flight
-from .schedule import Schedule, FlightAssignment, FlightServiceAssignment, StaffAssignment
+from .schedule import Schedule, FlightAllocation, ServiceAllocation, StaffInfo
 from .service import Service
 from .shift import Shift
 from .staff import Staff
@@ -11,6 +11,6 @@ from .staff import Staff
 __all__ = [
     'ServiceType', 'CertificationRequirement',
     'Bay', 'Certification', 'FlightService', 'Flight',
-    'Schedule', 'FlightAssignment', 'FlightServiceAssignment','StaffAssignment',
+    'Schedule', 'FlightAllocation', 'ServiceAllocation','StaffInfo',
     'Service', 'Shift', 'Staff'
 ]

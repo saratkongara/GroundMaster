@@ -19,17 +19,17 @@ def validate_schedule(schedule):
     multi_flight_assignments = defaultdict(set)
 
     # Step 1: Validate each flight assignment
-    for assignment in schedule.assignments:
-        flight_number = assignment.flight_number
+    for allocation in schedule.allocations:
+        flight_number = allocation.flight_number
         staff_assignments_per_flight = defaultdict(set)  # Track which staff are assigned to which services
 
-        for service_assignment in assignment.services:
-            service_id = service_assignment.service_id
-            service_type = service_assignment.service_type
-            assigned_staff = {staff.staff_id for staff in service_assignment.assigned_staff}
+        for service_allocation in allocation.services:
+            service_id = service_allocation.service_id
+            service_type = service_allocation.service_type
+            assigned_staff = {staff.staff_id for staff in service_allocation.staff_allocation}
 
             # Ensure service count constraint is met
-            expected_count = service_assignment.required_staff_count
+            expected_count = service_allocation.required_staff_count
             assert len(assigned_staff) <= expected_count, (
                 f"Flight {flight_number}, Service {service_id} requires {expected_count} staff, but got {len(assigned_staff)}"
             )

@@ -2,7 +2,7 @@ import logging
 from ortools.sat.python import cp_model
 from scheduler.result import Result
 from scheduler.models import Flight, Service, Staff, ServiceType, Bay
-from scheduler.models import Schedule, FlightAssignment, FlightServiceAssignment, StaffAssignment
+from scheduler.models import Schedule, FlightAllocation, ServiceAllocation, StaffInfo
 from scheduler.allocation_plan import AllocationPlan
 from typing import Dict, List
 from datetime import timedelta
@@ -458,11 +458,11 @@ class Scheduler:
         """Generates a complete schedule including all services for all flights.
         If no staff is assigned to a service, it will still be included with an empty staff list.
         """
-        allocations: Dict[str, FlightAssignment] = {}
+        allocations: Dict[str, FlightAllocation] = {}
 
         # Step 1: Iterate over all flights and services to initialize schedule
         for flight in self.flights:
-            flight_allocation = FlightAssignment(
+            flight_allocation = FlightAllocation(
                 flight_number=flight.number,
                 arrival=flight.arrival,
                 departure=flight.departure,
@@ -473,11 +473,11 @@ class Scheduler:
                 service = self.service_map[flight_service.id]
 
                 # Create a FlightServiceAssignment with an empty staff list
-                service_assignment = FlightServiceAssignment(
+                service_assignment = ServiceAllocation(
                     service_id=service.id,
                     service_name=service.name,
                     service_type=service.type.value,
-                    assigned_staff=[],
+                    staff_allocation=[],
                     required_staff_count=flight_service.count
                 )
 
@@ -496,12 +496,12 @@ class Scheduler:
 
                 if service_assignment:
                     staff = self.staff_map[staff_id]
-                    service_assignment.assigned_staff.append(StaffAssignment(
+                    service_assignment.staff_allocation.append(StaffInfo(
                         staff_id=staff.id,
                         staff_name=staff.name
                     ))
 
-        return Schedule(assignments=list(allocations.values()))
+        return Schedule(allocations=list(allocations.values()))
 
     def get_results(self):
         """Extract assignment results."""

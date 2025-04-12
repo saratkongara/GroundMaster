@@ -66,7 +66,7 @@ def test_only_one_multi_flight_service_assignment():
     schedule = scheduler.get_schedule()
     schedule.display()
 
-    assert len(schedule.assignments) == 1, "Should have 1 schedule"
+    assert len(schedule.allocations) == 1, "Should have 1 schedule"
     validate_schedule(schedule)
 
 def test_same_multi_flight_service_assignment_across_flights():
@@ -138,5 +138,5 @@ def test_same_multi_flight_service_assignment_across_flights():
     schedule = scheduler.get_schedule()
     schedule.display()
 
-    assert len(schedule.assignments) == 2, "Should have 2 schedules"
+    assert len(schedule.allocations) == 2, "Should have 2 schedules"
     validate_schedule(schedule)
