@@ -1,9 +1,9 @@
 import logging
 from ortools.sat.python import cp_model
-from scheduler.result import Result
+from .result import Result
 from scheduler.models import Flight, Service, Staff, ServiceType, Bay
 from scheduler.models import Schedule, FlightAllocation, ServiceAllocation, StaffInfo
-from scheduler.allocation_plan import AllocationPlan
+from scheduler.plans import AllocationPlan
 from typing import Dict, List
 from datetime import timedelta
 from collections import defaultdict

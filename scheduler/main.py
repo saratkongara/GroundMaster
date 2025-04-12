@@ -1,5 +1,4 @@
-from scheduler.scheduler import Scheduler
-from scheduler.result import Result
+from scheduler.core import Scheduler, Result
 from scheduler.models import Bay, Flight, Service, Staff, FlightService, Shift, ServiceType, CertificationRequirement
 from typing import List
 import json

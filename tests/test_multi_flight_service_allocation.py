@@ -1,6 +1,5 @@
 import pytest
-from scheduler.scheduler import Scheduler
-from scheduler.result import Result
+from scheduler.core import Scheduler, Result
 from scheduler.models import Service, ServiceType, Bay, Flight, FlightService, Staff, Shift, CertificationRequirement
 from tests.utils import validate_schedule
 
