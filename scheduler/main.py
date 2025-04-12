@@ -1,6 +1,6 @@
 from scheduler.scheduler import Scheduler
 from scheduler.result import Result
-from scheduler.models import Bay, Flight, Service, Staff, FlightService, Shift, ServiceType
+from scheduler.models import Bay, Flight, Service, Staff, FlightService, Shift, ServiceType, CertificationRequirement
 from typing import List
 import json
 
@@ -27,7 +27,7 @@ def load_services(file_path: str) -> List[Service]:
 
     services = []
     for service in services_data:
-        services.append(Service(**{**service, 'type': ServiceType(service['type'])}))
+        services.append(Service(**{**service, 'type': ServiceType(service['type']), 'certification_requirement': CertificationRequirement(service['certification_requirement'])}))
     
     print(f"SERVICES: {services}")
     return services

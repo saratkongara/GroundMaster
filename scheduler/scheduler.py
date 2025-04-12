@@ -5,7 +5,8 @@ from scheduler.models import Flight, Service, Staff, ServiceType, Bay
 from scheduler.models import Schedule, FlightAllocation, FlightServiceAssignment, StaffAssignment, CertificationRequirement
 from scheduler.allocation_plan import AllocationPlan
 from typing import Dict, List
-from datetime import timedelta
+from datetime import datetime, timedelta
+from collections import defaultdict
 
 # This class uses Google OR Tools to create a schedule for dynamic ground staff allocation to flights for different above and below the wing services
 # The key entities are certificate, staff, service, flight. The roster has the list of staff members with their shifts and certifications.
@@ -26,11 +27,99 @@ class Scheduler:
         self.model = cp_model.CpModel()
         self.solver = cp_model.CpSolver()
         self.assignments = {}
+        self.overlap_tolerance_buffer = 15  # minutes
 
         # Precompute lookup maps
         self.flight_map = {flight.number: flight for flight in self.flights}
         self.staff_map = {staff.id: staff for staff in self.roster}
         self.service_map = {service.id: service for service in services}
+        self.travel_time_map = {
+            (a, b): self.bays[a].travel_time.get(b, 0)
+            for a in self.bays 
+            for b in self.bays
+        }
+        self.overlapping_flights_map = self.get_overlapping_flights_map()
+
+    def get_overlapping_flights_map(self):
+        """
+        Builds a mapping of flights to their potentially overlapping subsequent flights,
+        considering service time windows, bay travel times, and allowed overlap tolerance.
+        
+        Returns:
+            Dict[str, List[str]]: Mapping from each flight number to a list of flight numbers
+            that may overlap with it (considering travel time and buffer), where overlapping
+            flights always occur later in the schedule.
+            
+        Methodology:
+            1. Flights are sorted chronologically by arrival time
+            2. For each flight A, we examine all subsequent flights B
+            3. We calculate the minimum required gap between flights as:
+            max(travel_time_between_bays - overlap_tolerance_buffer, 0)
+            4. An overlap is identified if:
+            flight_A's latest service end + required_gap > flight_B's earliest service start
+        """
+        logging.debug("Building flight overlap map considering service times and travel requirements...")
+
+        # Sort flights chronologically to enable single-pass comparison
+        sorted_flights = sorted(self.flights, key=lambda f: f.arrival_time)
+        overlap_map = defaultdict(list)
+
+        for i, flight_a in enumerate(sorted_flights):
+            # Get non-MultiFlight services for flight_a
+            a_services = [
+                fs for fs in flight_a.flight_services
+                if self.service_map[fs.id].type != ServiceType.MULTI_FLIGHT
+            ]
+            
+            # Determine the latest service end time on this flight
+            # (or departure time if no non-MultiFlight services exist)
+            a_services_end = (
+                max(flight_a.get_service_time(fs.start, fs.end)[1] for fs in a_services)
+                if a_services  # Only calculate max if non-MultiFlight services exist
+                else flight_a.departure_time  # Fallback to flight departure time
+            )
+
+            # Only check future flights (j > i)
+            for j in range(i + 1, len(sorted_flights)):
+                flight_b = sorted_flights[j]
+                
+                # Get non-MultiFlight services for flight_b
+                b_services = [
+                    fs for fs in flight_b.flight_services
+                    if self.service_map[fs.id].type != ServiceType.MULTI_FLIGHT
+                ]
+                
+                # Determine the earliest service start time on the subsequent flight
+                # (or arrival time if no non-MultiFlight services exist)
+                b_services_start = (
+                    min(flight_b.get_service_time(fs.start, fs.end)[0] for fs in b_services)
+                    if b_services  # Only calculate min if non-MultiFlight services exist
+                    else flight_b.arrival_time  # Fallback to flight arrival time
+                )
+
+                # Get required travel time between bays (0 if same bay)
+                travel_time = self.travel_time_map.get(
+                    (flight_a.bay_number, flight_b.bay_number), 0)
+                
+                # Calculate minimum required gap between flights:
+                # If buffer > travel_time, negative gap becomes 0 (allows full overlap)
+                required_gap = max(travel_time - self.overlap_tolerance_buffer, 0)
+                
+                # Check for temporal conflict
+                if a_services_end + timedelta(minutes=required_gap) > b_services_start:
+                    overlap_map[flight_a.number].append(flight_b.number)
+                    logging.debug(
+                        f"Overlap detected: Flight {flight_a.number} (ends {a_services_end.time()}) "
+                        f"conflicts with Flight {flight_b.number} (starts {b_services_start.time()}) "
+                        f"when accounting for {required_gap} min required gap "
+                        f"(travel: {travel_time} min, buffer: {self.overlap_tolerance_buffer} min)"
+                    )
+                else:
+                    # No overlap with flight_b, and since flights are sorted by arrival time,
+                    # no subsequent flights can overlap with flight_a either
+                    break  # Exit inner loop early
+
+        return overlap_map
 
     def run(self):
         """Solve the staff allocation optimization problem."""
@@ -73,7 +162,7 @@ class Scheduler:
         self.add_flight_level_service_constraints()
         self.add_common_level_service_constraints()
         self.add_multiflight_service_constraints()
-        self.add_flight_transition_constraints(overlap_tolerance_buffer=15)
+        self.add_flight_transition_constraints(self.overlap_tolerance_buffer)
 
     def add_certification_constraints(self):
         """Add certification constraints based on the certification requirement (ALL or ANY)."""
@@ -81,16 +170,12 @@ class Scheduler:
             service = next(service for service in self.services if service.id == service_id)
             staff = next(staff for staff in self.roster if staff.id == staff_id)
 
-            if service.certification_requirement == CertificationRequirement.ALL:
-                # Staff must have all required certifications
-                if not all(cert in staff.certifications for cert in service.certifications):
-                    logging.debug(f"Staff {staff_id} does not meet ALL certifications for service {service_id}, setting var {var} to 0")
-                    self.model.Add(var == 0)
-            elif service.certification_requirement == CertificationRequirement.ANY:
-                # Staff must have at least one of the required certifications
-                if not any(cert in staff.certifications for cert in service.certifications):
-                    logging.debug(f"Staff {staff_id} does not meet ANY certifications for service {service_id}, setting var {var} to 0")
-                    self.model.Add(var == 0)
+            if not staff.can_perform_service(service):
+                logging.debug(
+                    f"Staff {staff_id} does not meet {service.certification_requirement.value} "
+                    f"certifications for service {service_id}, setting var {var} to 0"
+                )
+                self.model.Add(var == 0)
 
     def add_availability_constraints(self):
         """Ensure staff are only assigned to services they are available for."""
@@ -293,57 +378,57 @@ class Scheduler:
 
     def add_flight_transition_constraints(self, overlap_tolerance_buffer: int):
         """
-        Add constraints to ensure staff transitions between flights are valid using bay-specific travel times.
-        MultiFlight services are exempt from overlapping time checks, as staff can handle them across flights simultaneously.
-
-        Args:
-            overlap_tolerance_buffer (int): The allowed buffer (in minutes) for overlapping service times.
+        Add constraints to ensure that staff members cannot be assigned to overlapping flight services:
+        1. Only checks flights marked as overlapping in overlapping_flights_map
+        2. Skips service pairs where staff isn't available during the service times
+        3. Skips service pairs where staff lacks required certifications
         """
-        logging.debug("Adding flight transition constraints with bay-specific travel times...")
+        logging.debug("Adding flight transition constraints with availability and certification checks...")
 
         for staff in self.roster:
             for flight_a in self.flights:
-                for flight_b in self.flights:
-                    if flight_a.number == flight_b.number:
-                        continue  # Skip the same flight
+                for flight_b_num in self.overlapping_flights_map.get(flight_a.number, []):
+                    flight_b = self.flight_map[flight_b_num]
+                    travel_time = self.travel_time_map.get(
+                        (flight_a.bay_number, flight_b.bay_number), 0)
 
-                    # Get the travel time between the bays of flight_a and flight_b
-                    travel_time = 0
-                    if flight_a.bay_number != flight_b.bay_number:
-                        travel_time = self.bays[flight_a.bay_number].travel_time.get(flight_b.bay_number, 0)
-
-                    # Get all services for flight_a and flight_b
-                    services_a = flight_a.flight_services
-                    services_b = flight_b.flight_services
-
-                    for service_a in services_a:
+                    for service_a in flight_a.flight_services:
                         if self.service_map[service_a.id].type == ServiceType.MULTI_FLIGHT:
-                            continue  # Skip MultiFlight services
+                            continue
 
-                        service_a_start, service_a_end = flight_a.get_service_time(service_a.start, service_a.end)
+                        # Get service and check staff eligibility
+                        service_a_obj = self.service_map[service_a.id]
+                        a_start, a_end = flight_a.get_service_time(service_a.start, service_a.end)
+                        
+                        if not (staff.is_available_for_service(a_start, a_end) and 
+                            staff.can_perform_service(service_a_obj)):
+                            continue
 
-                        for service_b in services_b:
+                        adjusted_a_end = a_end + timedelta(minutes=travel_time)
+
+                        for service_b in flight_b.flight_services:
                             if self.service_map[service_b.id].type == ServiceType.MULTI_FLIGHT:
-                                continue  # Skip MultiFlight services
+                                continue
 
-                            service_b_start, service_b_end = flight_b.get_service_time(service_b.start, service_b.end)
+                            # Get service and check staff eligibility
+                            service_b_obj = self.service_map[service_b.id]
+                            b_start, b_end = flight_b.get_service_time(service_b.start, service_b.end)
+                            
+                            if not (staff.is_available_for_service(b_start, b_end) and 
+                                staff.can_perform_service(service_b_obj)):
+                                continue
 
-                            # Calculate the adjusted end time for the last service on flight_a
-                            adjusted_service_a_end = service_a_end + timedelta(minutes=travel_time)
-
-                            # Check if the adjusted end time overlaps with the start time of service_b
-                            if adjusted_service_a_end > service_b_start + timedelta(minutes=overlap_tolerance_buffer):
-                                # Prevent the same staff from being assigned to both services
+                            if adjusted_a_end > b_start + timedelta(minutes=overlap_tolerance_buffer):
                                 var_a = self.assignments.get((flight_a.number, service_a.id, staff.id))
                                 var_b = self.assignments.get((flight_b.number, service_b.id, staff.id))
                                 
-                                logging.debug(
-                                    f"Adding transition constraint: Staff {staff.id} cannot handle overlapping services "
-                                    f"{service_a.id} on flight {flight_a.number} and {service_b.id} on flight {flight_b.number} "
-                                    f"with travel time {travel_time} and overlap tolerance {overlap_tolerance_buffer}."
-                                )
                                 self.model.Add(var_a + var_b <= 1)
-                                
+                                logging.debug(
+                                    f"Conflict: Staff {staff.id} cannot serve both "
+                                    f"{service_a.id}@{flight_a.number}(ends {a_end.time()}+{travel_time}min) "
+                                    f"and {service_b.id}@{flight_b.number}(starts {b_start.time()})"
+                                )
+                                    
     def set_objective(self):
         # Prioritize staff with fewer certifications
         weighted_assignments = sum(
