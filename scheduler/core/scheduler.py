@@ -7,8 +7,18 @@ from scheduler.plans import AllocationPlan
 from typing import Dict, List
 from datetime import timedelta
 from collections import defaultdict
-from scheduler.constraints import AvailabilityConstraint, CertificationConstraint, StaffCountConstraint
+from scheduler.constraints import AvailabilityConstraint, CertificationConstraint, StaffCountConstraint, FlightLevelServiceConstraint
 
+# The Scheduler class is responsible for creating a schedule for dynamic ground staff allocation to flights
+# It uses Google OR Tools to solve the optimization problem of assigning staff to flights based on their availability, certifications, and service requirements
+# The class takes in a list of services, flights, staff members, and bays, and uses these to create a schedule
+# The class also includes methods for adding constraints to the optimization problem, setting the objective function, and generating the final schedule
+# The constraints include ensuring that staff are only assigned to services they are available for, that they have the necessary certifications, and that the number of staff assigned to a service is within the specified limits
+# The class also includes methods for adding common level and multi-flight service constraints, as well as flight transition constraints
+# The Scheduler class is the main entry point for the scheduling process
+# The class is initialized with a list of services, flights, staff members, and bays
+# The class also includes methods for creating decision variables, adding constraints, setting the objective function, and generating the final schedule
+# The class also includes methods for getting the allocation plan and the final schedule
 # This class uses Google OR Tools to create a schedule for dynamic ground staff allocation to flights for different above and below the wing services
 # The key entities are certificate, staff, service, flight. The roster has the list of staff members with their shifts and certifications.
 # The services is a list of service objects with start and end times described relative to Arrival(A) and Departure(D) times of the flight
@@ -44,7 +54,8 @@ class Scheduler:
         self.constraints = [
             AvailabilityConstraint(flights, roster),
             CertificationConstraint(services, roster),
-            StaffCountConstraint(flights, roster)
+            StaffCountConstraint(flights, roster),
+            FlightLevelServiceConstraint(flights, roster, self.service_map),
         ]
 
     def get_overlapping_flights_map(self):
@@ -161,7 +172,6 @@ class Scheduler:
                             logging.debug(f"Applying hint: {hint} for key: {key}")
                             self.model.AddHint(self.assignments[key], 1)
 
-
     def add_constraints(self):
         # self.add_certification_constraints()
         # self.add_availability_constraints()
@@ -169,71 +179,12 @@ class Scheduler:
         for constraint in self.constraints:
             constraint.apply(self.model, self.assignments)
 
-        self.add_flight_level_service_constraints()
+        #self.add_flight_level_service_constraints()
         self.add_common_level_service_constraints()
         self.add_multiflight_service_constraints()
         self.add_flight_transition_constraints(self.overlap_tolerance_buffer)
 
-    def add_flight_level_service_constraints(self):
-        """
-        Ensure that staff can take multiple FlightLevel (F) services (cross utilization) on the same flight 
-        only if they do not conflict (based on excludes_services).
-        """
-
-        logging.debug("Adding FlightLevel (F) service constraints...")
-
-        for flight in self.flights:
-            # Get FlightLevel (F) services for this flight
-            flight_level_services = [
-                flight_service for flight_service in flight.flight_services 
-                if self.service_map[flight_service.id].type == ServiceType.FLIGHT_LEVEL
-            ]
-
-            for staff in self.roster:
-                # Collect assignment variables for all F services on this flight for a selected staff member
-                assigned_services = {
-                    flight_service.id: self.assignments[(flight.number, flight_service.id, staff.id)]
-                    for flight_service in flight_level_services
-                }
-
-                # Apply conflict constraints based on exclude_services rule
-                for flight_level_service_b in flight_level_services:
-                    service_b = self.service_map[flight_level_service_b.id]
-
-                    for flight_level_service_a in flight_level_services:
-                        if flight_level_service_a.id in service_b.exclude_services:  # Corrected rule
-                            var_a = assigned_services[flight_level_service_a.id]
-                            var_b = assigned_services[flight_level_service_b.id]
-                            logging.debug(f"Adding exclude services conflict constraint: {flight_level_service_a.id} excluded in {flight_level_service_b.id} for staff {staff.id} on flight {flight.number}")
-                            self.model.Add(var_a + var_b <= 1)  # Prevent simultaneous assignment
-
-                # Apply cross_utilization_limit constraints
-                for flight_level_service in flight_level_services:
-                    service = self.service_map[flight_level_service.id]
-                    cross_utilization_limit = service.cross_utilization_limit
-
-                # Collect all other FlightLevel services for this staff member on the same flight
-                # which can potentially be assigned to this staff member along with the current service
-                # This is done to ensure that the staff member does not exceed the cross_utilization_limit
-                # for the current service
-                # Exclude the current flight_level_service from the list
-                # Also exclude any services that are in the exclude_services list of the current service
-                # or services that exclude the current service
-                other_service_vars = [
-                    assigned_services[other_service.id]
-                    for other_service in flight_level_services
-                    if other_service.id != flight_level_service.id
-                    and flight_level_service.id not in self.service_map[other_service.id].exclude_services
-                    and other_service.id not in self.service_map[flight_level_service.id].exclude_services
-                ]
-
-                # Add constraint to ensure the staff member does not exceed the cross_utilization_limit
-                if other_service_vars:
-                    self.model.Add(
-                        assigned_services[flight_level_service.id] + sum(other_service_vars) <= cross_utilization_limit
-                    )
-                    logging.debug(f"Adding cross utilization constraint: Staff {staff.id} on flight {flight.number} for service {flight_level_service.id} with limit {cross_utilization_limit}")
-
+ 
     def add_common_level_service_constraints(self):
         """Ensure that:
         1. If a staff member is assigned to a Common Level (C) service on a flight, they cannot be assigned to any other service on the same flight.
