@@ -18,12 +18,12 @@ def validate_schedule(schedule):
     # A dictionary to track MultiFlight assignments per staff
     multi_flight_assignments = defaultdict(set)
 
-    # Step 1: Validate each flight allocation
-    for allocation in schedule.allocations:
-        flight_number = allocation.flight_number
+    # Step 1: Validate each flight assignment
+    for assignment in schedule.assignments:
+        flight_number = assignment.flight_number
         staff_assignments_per_flight = defaultdict(set)  # Track which staff are assigned to which services
 
-        for service_assignment in allocation.services:
+        for service_assignment in assignment.services:
             service_id = service_assignment.service_id
             service_type = service_assignment.service_type
             assigned_staff = {staff.staff_id for staff in service_assignment.assigned_staff}

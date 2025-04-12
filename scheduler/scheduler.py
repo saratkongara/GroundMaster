@@ -2,10 +2,10 @@ import logging
 from ortools.sat.python import cp_model
 from scheduler.result import Result
 from scheduler.models import Flight, Service, Staff, ServiceType, Bay
-from scheduler.models import Schedule, FlightAllocation, FlightServiceAssignment, StaffAssignment, CertificationRequirement
+from scheduler.models import Schedule, FlightAssignment, FlightServiceAssignment, StaffAssignment
 from scheduler.allocation_plan import AllocationPlan
 from typing import Dict, List
-from datetime import datetime, timedelta
+from datetime import timedelta
 from collections import defaultdict
 
 # This class uses Google OR Tools to create a schedule for dynamic ground staff allocation to flights for different above and below the wing services
@@ -458,11 +458,11 @@ class Scheduler:
         """Generates a complete schedule including all services for all flights.
         If no staff is assigned to a service, it will still be included with an empty staff list.
         """
-        allocations: Dict[str, FlightAllocation] = {}
+        allocations: Dict[str, FlightAssignment] = {}
 
         # Step 1: Iterate over all flights and services to initialize schedule
         for flight in self.flights:
-            flight_allocation = FlightAllocation(
+            flight_allocation = FlightAssignment(
                 flight_number=flight.number,
                 arrival=flight.arrival,
                 departure=flight.departure,
@@ -501,7 +501,7 @@ class Scheduler:
                         staff_name=staff.name
                     ))
 
-        return Schedule(allocations=list(allocations.values()))
+        return Schedule(assignments=list(allocations.values()))
 
     def get_results(self):
         """Extract assignment results."""
