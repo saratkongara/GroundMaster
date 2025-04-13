@@ -7,23 +7,14 @@ from scheduler.plans import AllocationPlan
 from typing import Dict, List
 from datetime import timedelta
 from collections import defaultdict
-from scheduler.constraints import AvailabilityConstraint, CertificationConstraint, StaffCountConstraint, FlightLevelServiceConstraint
+from scheduler.constraints import AvailabilityConstraint, CertificationConstraint, StaffCountConstraint, FlightLevelServiceConstraint, CommonLevelServiceConstraint
 
+# The Scheduler class is the main entry point for the scheduling process
 # The Scheduler class is responsible for creating a schedule for dynamic ground staff allocation to flights
 # It uses Google OR Tools to solve the optimization problem of assigning staff to flights based on their availability, certifications, and service requirements
 # The class takes in a list of services, flights, staff members, and bays, and uses these to create a schedule
-# The class also includes methods for adding constraints to the optimization problem, setting the objective function, and generating the final schedule
-# The constraints include ensuring that staff are only assigned to services they are available for, that they have the necessary certifications, and that the number of staff assigned to a service is within the specified limits
-# The class also includes methods for adding common level and multi-flight service constraints, as well as flight transition constraints
-# The Scheduler class is the main entry point for the scheduling process
-# The class is initialized with a list of services, flights, staff members, and bays
 # The class also includes methods for creating decision variables, adding constraints, setting the objective function, and generating the final schedule
 # The class also includes methods for getting the allocation plan and the final schedule
-# This class uses Google OR Tools to create a schedule for dynamic ground staff allocation to flights for different above and below the wing services
-# The key entities are certificate, staff, service, flight. The roster has the list of staff members with their shifts and certifications.
-# The services is a list of service objects with start and end times described relative to Arrival(A) and Departure(D) times of the flight
-# The flights is a list of flight objects with number, arrival and departure times along with flight services
-# The flight service is an object linking the flight to the service, it includes the flight number, service id and the number of resources need for this service on the flight
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG, format="%(levelname)s: %(message)s")
@@ -56,6 +47,7 @@ class Scheduler:
             CertificationConstraint(services, roster),
             StaffCountConstraint(flights, roster),
             FlightLevelServiceConstraint(flights, roster, self.service_map),
+            CommonLevelServiceConstraint(flights, roster, self.service_map),
         ]
 
     def get_overlapping_flights_map(self):
@@ -173,51 +165,13 @@ class Scheduler:
                             self.model.AddHint(self.assignments[key], 1)
 
     def add_constraints(self):
-        # self.add_certification_constraints()
-        # self.add_availability_constraints()
-        # self.add_staff_count_constraints()
         for constraint in self.constraints:
             constraint.apply(self.model, self.assignments)
 
-        #self.add_flight_level_service_constraints()
-        self.add_common_level_service_constraints()
         self.add_multiflight_service_constraints()
         self.add_flight_transition_constraints(self.overlap_tolerance_buffer)
 
  
-    def add_common_level_service_constraints(self):
-        """Ensure that:
-        1. If a staff member is assigned to a Common Level (C) service on a flight, they cannot be assigned to any other service on the same flight.
-        2. A staff member cannot be assigned to more than one Common Level service on the same flight.
-        """
-        logging.debug("Adding Common Level (C) service constraints...")
-
-        for flight in self.flights:
-            for staff in self.roster:
-                # Collect assignment variables for Common Level (C) services
-                common_level_vars = [
-                    self.assignments[(flight.number, fs.id, staff.id)]
-                    for fs in flight.flight_services
-                    if self.service_map[fs.id].type == ServiceType.COMMON_LEVEL
-                ]
-
-                # Collect assignment variables for non-Common Level services
-                non_common_level_vars = [
-                    self.assignments[(flight.number, fs.id, staff.id)]
-                    for fs in flight.flight_services
-                    if self.service_map[fs.id].type != ServiceType.COMMON_LEVEL
-                ]
-
-                # Rule 1: A staff member cannot be assigned to more than one Common Level service on the same flight
-                self.model.Add(sum(common_level_vars) <= 1)
-
-                # Rule 2: If any Common Level service is assigned, no other services can be assigned
-                for common_var in common_level_vars:
-                    for non_common_var in non_common_level_vars:
-                        self.model.Add(common_var + non_common_var <= 1)
-
-        logging.debug("✅ Common Level (C) service constraints added.")
-
     def add_multiflight_service_constraints(self):
         """Ensure staff assigned a MultiFlight (M) service:
         - Cannot take any other service on the same flight.

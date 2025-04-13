@@ -33,10 +33,10 @@ class FlightLevelServiceConstraint(Constraint):
                     for flight_service in flight_level_services
                 }
 
-                self._apply_exclude_services_constraints(model, flight_level_services, staff_service_assignment_vars, flight.number, staff.id)
-                self._apply_cross_utilization_limit_constraints(model, flight_level_services, staff_service_assignment_vars, flight.number, staff.id)
+                self._apply_exclude_services_constraint(model, flight_level_services, staff_service_assignment_vars, flight.number, staff.id)
+                self._apply_cross_utilization_limit_constraint(model, flight_level_services, staff_service_assignment_vars, flight.number, staff.id)
                 
-    def _apply_exclude_services_constraints(self, model, flight_level_services, staff_service_assignment_vars, flight_number, staff_id):
+    def _apply_exclude_services_constraint(self, model, flight_level_services, staff_service_assignment_vars, flight_number, staff_id):
         # Apply conflict constraints based on exclude_services rule
         for flight_level_service_a in flight_level_services:
             service_a = self.service_map[flight_level_service_a.id]
@@ -49,7 +49,7 @@ class FlightLevelServiceConstraint(Constraint):
                     logging.debug(f"Adding exclude services conflict constraint: {flight_level_service_b.id} excluded in {flight_level_service_a.id} for staff {staff_id} on flight {flight_number}")
                     model.Add(var_a + var_b <= 1)  # Prevent simultaneous assignment
 
-    def _apply_cross_utilization_limit_constraints(self, model, flight_level_services, staff_service_assignment_vars, flight_number, staff_id):
+    def _apply_cross_utilization_limit_constraint(self, model, flight_level_services, staff_service_assignment_vars, flight_number, staff_id):
         # Collect all other FlightLevel services for this staff member on the same flight
         # which can potentially be assigned to this staff member along with the current service
         # This is done to ensure that the staff member does not exceed the cross_utilization_limit
