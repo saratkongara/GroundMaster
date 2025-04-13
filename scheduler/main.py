@@ -1,5 +1,5 @@
 from scheduler.core import Scheduler, Result
-from scheduler.models import Bay, Flight, Service, Staff, FlightService, Shift, ServiceType, CertificationRequirement
+from scheduler.models import Bay, Flight, Service, Settings, Staff, FlightService, Shift, ServiceType, CertificationRequirement
 from typing import List
 import json
 
@@ -47,9 +47,10 @@ def run():
     flights = load_flights('data/flights.json')
     services = load_services('data/services.json')
     roster = load_roster('data/roster.json')
+    settings = Settings()
 
     print(f"BAYS: {bays}")
-    scheduler = Scheduler(services, flights, roster, bays)
+    scheduler = Scheduler(services, flights, roster, bays, settings)
     solution = scheduler.run()
 
     if solution == Result.FOUND:

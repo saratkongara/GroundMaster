@@ -1,6 +1,6 @@
 import pytest
 from scheduler.core import Scheduler, Result
-from scheduler.models import Service, ServiceType, Bay, Flight, FlightService, Staff, Shift, CertificationRequirement
+from scheduler.models import Service, Settings, ServiceType, Bay, Flight, FlightService, Staff, Shift, CertificationRequirement
 from tests.utils import validate_schedule
 
 def test_single_certification_requirement():
@@ -54,7 +54,8 @@ def test_single_certification_requirement():
         )
     ]
 
-    scheduler = Scheduler(services, flights, staff, bays)
+    settings = Settings()
+    scheduler = Scheduler(services, flights, staff, bays, settings)
     solution = scheduler.run()
 
     assert solution == Result.FOUND, "Scheduler should find a solution"
@@ -113,7 +114,8 @@ def test_certification_priority_requirement():
         )
     ]
 
-    scheduler = Scheduler(services, flights, staff, bays)
+    settings = Settings()
+    scheduler = Scheduler(services, flights, staff, bays, settings)
     solution = scheduler.run()
 
     assert solution == Result.FOUND, "Scheduler should find a solution"
@@ -173,7 +175,8 @@ def test_multiple_certification_requirement():
         )
     ]
 
-    scheduler = Scheduler(services, flights, staff, bays)
+    settings = Settings()
+    scheduler = Scheduler(services, flights, staff, bays, settings)
     solution = scheduler.run()
 
     assert solution == Result.FOUND, "Scheduler should find a solution"

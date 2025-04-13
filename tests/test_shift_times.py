@@ -1,6 +1,6 @@
 import pytest
 from scheduler.core import Scheduler, Result
-from scheduler.models import Service, ServiceType, Bay, Flight, FlightService, Staff, Shift, CertificationRequirement
+from scheduler.models import Service, Settings, ServiceType, Bay, Flight, FlightService, Staff, Shift, CertificationRequirement
 from tests.utils import validate_schedule
 
 def test_single_shift_requirement():
@@ -48,7 +48,8 @@ def test_single_shift_requirement():
         )
     ]
 
-    scheduler = Scheduler(services, flights, staff, bays)
+    settings = Settings()
+    scheduler = Scheduler(services, flights, staff, bays, settings)
     solution = scheduler.run()
 
     assert solution == Result.FOUND, "Scheduler should find a solution"
@@ -100,8 +101,9 @@ def test_multiple_shift_requirement():
             shifts=[Shift(start="05:00", end="09:00")]  # Certified and unavailable
         )
     ]
-
-    scheduler = Scheduler(services, flights, staff, bays)
+    
+    settings = Settings()
+    scheduler = Scheduler(services, flights, staff, bays, settings)
     solution = scheduler.run()
 
     assert solution == Result.FOUND, "Scheduler should find a solution"

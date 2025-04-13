@@ -1,6 +1,6 @@
 import pytest
 from scheduler.core import Scheduler, Result
-from scheduler.models import Service, ServiceType, Bay, Flight, FlightService, Staff, Shift, CertificationRequirement
+from scheduler.models import Service, Settings, ServiceType, Bay, Flight, FlightService, Staff, Shift, CertificationRequirement
 from tests.utils import validate_schedule
 
 def test_only_one_multi_flight_service_assignment():
@@ -57,7 +57,8 @@ def test_only_one_multi_flight_service_assignment():
         )
     ]
 
-    scheduler = Scheduler(services, flights, staff, bays)
+    settings = Settings()
+    scheduler = Scheduler(services, flights, staff, bays, settings)
     solution = scheduler.run()
 
     assert solution == Result.FOUND, "Scheduler should find a solution"
@@ -128,8 +129,9 @@ def test_same_multi_flight_service_assignment_across_flights():
             shifts=[Shift(start="05:00", end="09:00")]  # Certified and available
         )
     ]
-
-    scheduler = Scheduler(services, flights, staff, bays)
+    
+    settings = Settings()
+    scheduler = Scheduler(services, flights, staff, bays, settings)
     solution = scheduler.run()
 
     assert solution == Result.FOUND, "Scheduler should find a solution"

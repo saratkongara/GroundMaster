@@ -1,6 +1,6 @@
 import pytest
 from scheduler.core import Scheduler, Result
-from scheduler.models import Service, ServiceType, Bay, Flight, FlightService, Staff, Shift, CertificationRequirement
+from scheduler.models import Service, Settings, ServiceType, Bay, Flight, FlightService, Staff, Shift, CertificationRequirement
 from tests.utils import validate_schedule
 
 def test_all_service_types_assignment_across_multiple_flights():
@@ -103,7 +103,8 @@ def test_all_service_types_assignment_across_multiple_flights():
         )
     ]
 
-    scheduler = Scheduler(services, flights, staff, bays)
+    settings = Settings()
+    scheduler = Scheduler(services, flights, staff, bays, settings)
     solution = scheduler.run()
 
     assert solution == Result.FOUND, "Scheduler should find a solution"
