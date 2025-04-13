@@ -28,45 +28,51 @@ class FlightLevelServiceConstraint(Constraint):
 
             for staff in self.roster:
                 # Collect assignment variables for all F services on this flight for a selected staff member
-                assigned_services = {
+                staff_service_assignment_vars = {
                     flight_service.id: assignments[(flight.number, flight_service.id, staff.id)]
                     for flight_service in flight_level_services
                 }
 
-                # Apply conflict constraints based on exclude_services rule
-                for flight_level_service_b in flight_level_services:
-                    service_b = self.service_map[flight_level_service_b.id]
+                self._apply_exclude_services_constraints(model, flight_level_services, staff_service_assignment_vars, flight.number, staff.id)
+                self._apply_cross_utilization_limit_constraints(model, flight_level_services, staff_service_assignment_vars, flight.number, staff.id)
+                
+    def _apply_exclude_services_constraints(self, model, flight_level_services, staff_service_assignment_vars, flight_number, staff_id):
+        # Apply conflict constraints based on exclude_services rule
+        for flight_level_service_a in flight_level_services:
+            service_a = self.service_map[flight_level_service_a.id]
 
-                    for flight_level_service_a in flight_level_services:
-                        if flight_level_service_a.id in service_b.exclude_services:  # Corrected rule
-                            var_a = assigned_services[flight_level_service_a.id]
-                            var_b = assigned_services[flight_level_service_b.id]
-                            logging.debug(f"Adding exclude services conflict constraint: {flight_level_service_a.id} excluded in {flight_level_service_b.id} for staff {staff.id} on flight {flight.number}")
-                            model.Add(var_a + var_b <= 1)  # Prevent simultaneous assignment
+            for flight_level_service_b in flight_level_services:
+                if flight_level_service_b.id in service_a.exclude_services:
+                    var_a = staff_service_assignment_vars[flight_level_service_a.id]
+                    var_b = staff_service_assignment_vars[flight_level_service_b.id]
+                    
+                    logging.debug(f"Adding exclude services conflict constraint: {flight_level_service_b.id} excluded in {flight_level_service_a.id} for staff {staff_id} on flight {flight_number}")
+                    model.Add(var_a + var_b <= 1)  # Prevent simultaneous assignment
 
-                # Apply cross_utilization_limit constraints
-                for flight_level_service in flight_level_services:
-                    service = self.service_map[flight_level_service.id]
-                    cross_utilization_limit = service.cross_utilization_limit
+    def _apply_cross_utilization_limit_constraints(self, model, flight_level_services, staff_service_assignment_vars, flight_number, staff_id):
+        # Collect all other FlightLevel services for this staff member on the same flight
+        # which can potentially be assigned to this staff member along with the current service
+        # This is done to ensure that the staff member does not exceed the cross_utilization_limit
+        # for the current service
+        # Exclude the current flight_level_service from the list
+        # Also exclude any services that are in the exclude_services list of the current service
+        # or services that exclude the current service
+        
+        for flight_level_service in flight_level_services:
+            service = self.service_map[flight_level_service.id]
+            cross_utilization_limit = service.cross_utilization_limit
+   
+        other_service_vars = [
+            staff_service_assignment_vars[other_service.id]
+            for other_service in flight_level_services
+            if other_service.id != flight_level_service.id
+            and flight_level_service.id not in self.service_map[other_service.id].exclude_services
+            and other_service.id not in self.service_map[flight_level_service.id].exclude_services
+        ]
 
-                # Collect all other FlightLevel services for this staff member on the same flight
-                # which can potentially be assigned to this staff member along with the current service
-                # This is done to ensure that the staff member does not exceed the cross_utilization_limit
-                # for the current service
-                # Exclude the current flight_level_service from the list
-                # Also exclude any services that are in the exclude_services list of the current service
-                # or services that exclude the current service
-                other_service_vars = [
-                    assigned_services[other_service.id]
-                    for other_service in flight_level_services
-                    if other_service.id != flight_level_service.id
-                    and flight_level_service.id not in self.service_map[other_service.id].exclude_services
-                    and other_service.id not in self.service_map[flight_level_service.id].exclude_services
-                ]
-
-                # Add constraint to ensure the staff member does not exceed the cross_utilization_limit
-                if other_service_vars:
-                    model.Add(
-                        assigned_services[flight_level_service.id] + sum(other_service_vars) <= cross_utilization_limit
-                    )
-                    logging.debug(f"Adding cross utilization constraint: Staff {staff.id} on flight {flight.number} for service {flight_level_service.id} with limit {cross_utilization_limit}")
+        # Add constraint to ensure the staff member does not exceed the cross_utilization_limit
+        if other_service_vars:
+            model.Add(
+                staff_service_assignment_vars[flight_level_service.id] + sum(other_service_vars) <= cross_utilization_limit
+            )
+            logging.debug(f"Adding cross utilization constraint: Staff {staff_id} on flight {flight_number} for service {flight_level_service.id} with limit {cross_utilization_limit}")
