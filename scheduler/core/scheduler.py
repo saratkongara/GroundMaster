@@ -7,7 +7,7 @@ from scheduler.plans import AllocationPlan
 from typing import Dict, List
 from datetime import timedelta
 from collections import defaultdict
-from scheduler.constraints import AvailabilityConstraint, CertificationConstraint, StaffCountConstraint, FlightLevelServiceConstraint, CommonLevelServiceConstraint
+from scheduler.constraints import AvailabilityConstraint, CertificationConstraint, StaffCountConstraint, FlightLevelServiceConstraint, CommonLevelServiceConstraint, MultiFlightServiceConstraint
 
 # The Scheduler class is the main entry point for the scheduling process
 # The Scheduler class is responsible for creating a schedule for dynamic ground staff allocation to flights
@@ -48,6 +48,7 @@ class Scheduler:
             StaffCountConstraint(flights, roster),
             FlightLevelServiceConstraint(flights, roster, self.service_map),
             CommonLevelServiceConstraint(flights, roster, self.service_map),
+            MultiFlightServiceConstraint(flights, roster, self.service_map),
         ]
 
     def get_overlapping_flights_map(self):
@@ -168,76 +169,9 @@ class Scheduler:
         for constraint in self.constraints:
             constraint.apply(self.model, self.assignments)
 
-        self.add_multiflight_service_constraints()
         self.add_flight_transition_constraints(self.overlap_tolerance_buffer)
 
  
-    def add_multiflight_service_constraints(self):
-        """Ensure staff assigned a MultiFlight (M) service:
-        - Cannot take any other service on the same flight.
-        - Can only take the same MultiFlight service across multiple flights.
-        - Cannot be assigned multiple different MultiFlight services.
-        """
-
-        logging.debug("Adding MultiFlight (M) service constraints...")
-
-        # Step 1: Enforce MultiFlight constraints within the same flight
-        for flight in self.flights:
-            for staff in self.roster:
-                # Collect assignment variables for MultiFlight (M) services
-                multiflight_vars = [
-                    self.assignments[(flight.number, fs.id, staff.id)]
-                    for fs in flight.flight_services
-                    if self.service_map[fs.id].type == ServiceType.MULTI_FLIGHT
-                ]
-
-                # Collect assignment variables for non-MultiFlight services
-                non_multiflight_vars = [
-                    self.assignments[(flight.number, fs.id, staff.id)]
-                    for fs in flight.flight_services
-                    if self.service_map[fs.id].type != ServiceType.MULTI_FLIGHT
-                ]
-
-                # Rule 1: A staff member cannot be assigned more than one MultiFlight service on the same flight
-                self.model.Add(sum(multiflight_vars) <= 1)
-
-                # Rule 2: If a MultiFlight service is assigned, no other services can be assigned on this flight
-                for multiflight_var in multiflight_vars:
-                    for non_multiflight_var in non_multiflight_vars:
-                        self.model.Add(multiflight_var + non_multiflight_var <= 1)
-
-        logging.debug("✅ MultiFlight (M) service constraints added for individual flights.")
-       
-        # Step 2: Track MultiFlight assignments across flights
-        staff_multiflight_assignments = {staff.id: {} for staff in self.roster}
-
-        for flight in self.flights:
-            for staff in self.roster:
-                for fs in flight.flight_services:
-                    service = self.service_map[fs.id]
-                    if service.type == ServiceType.MULTI_FLIGHT:
-                        var = self.assignments[(flight.number, fs.id, staff.id)]
-                        if fs.id not in staff_multiflight_assignments[staff.id]:
-                            staff_multiflight_assignments[staff.id][fs.id] = []
-                        staff_multiflight_assignments[staff.id][fs.id].append(var)
-
-        # Step 3: Enforce cross-flight consistency for MultiFlight services
-        for staff_id, service_assignments in staff_multiflight_assignments.items():
-            service_vars = [self.model.NewBoolVar(f"staff_{staff_id}_assigned_multiflight_{service_id}") 
-                            for service_id in service_assignments]
-
-            # Ensure staff is assigned at most ONE MultiFlight service across all flights
-            self.model.Add(sum(service_vars) <= 1)
-
-            for idx, (service_id, assignments) in enumerate(service_assignments.items()):
-                # Ensure staff is assigned the same MultiFlight service across flights
-                self.model.Add(sum(assignments) >= 1).OnlyEnforceIf(service_vars[idx])
-                self.model.Add(sum(assignments) == 0).OnlyEnforceIf(service_vars[idx].Not())
-
-                logging.debug(f"✅ Enforcing MultiFlight service consistency: Staff {staff_id} can only be assigned MultiFlight service {service_id} across flights.")
-
-        logging.debug("✅ MultiFlight (M) service constraints added.")
-
     def add_flight_transition_constraints(self, overlap_tolerance_buffer: int):
         """
         Add constraints to ensure that staff members cannot be assigned to overlapping flight services:
