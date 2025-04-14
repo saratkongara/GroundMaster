@@ -1,12 +1,10 @@
 import logging
 from ortools.sat.python import cp_model
 from .result import Result
-from scheduler.models import Flight, Service, Staff, ServiceType, Bay
+from scheduler.models import Flight, Service, Staff, Bay
 from scheduler.models import Settings, Schedule, FlightAllocation, ServiceAllocation, StaffInfo
 from scheduler.plans import AllocationPlan
 from typing import Dict, List
-from datetime import timedelta
-from collections import defaultdict
 from scheduler.constraints import AvailabilityConstraint, CertificationConstraint, StaffCountConstraint, FlightLevelServiceConstraint, CommonLevelServiceConstraint, MultiFlightServiceConstraint, FlightTransitionConstraint
 from scheduler.services import OverlapDetectionService
 
