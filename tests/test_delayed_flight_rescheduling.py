@@ -123,14 +123,14 @@ def test_rescheduling_for_delayed_flight():
 
     assert solution == Result.FOUND, "Scheduler should find a solution"
 
-    schedule = scheduler.get_schedule()
+    allocation_plan = scheduler.get_allocation_plan()
+    schedule = allocation_plan.get_schedule()
     schedule.display()
 
     #assert len(schedule.allocations) == 2, "Should have 2 schedules"
     validate_schedule(schedule)
 
     # Assume DL107 is delayed by 30, notification received at 9:00 AM
-    allocation_plan = scheduler.get_allocation_plan()
     allocation_plan.remove_flight("DL107")
 
     # Remove the flights from the past and change the arrival and departure time of the delayed flight
@@ -144,5 +144,5 @@ def test_rescheduling_for_delayed_flight():
 
     assert solution == Result.FOUND, "Scheduler should find a solution"
 
-    schedule = scheduler.get_schedule()
+    schedule = scheduler.get_allocation_plan().get_schedule()
     schedule.display()

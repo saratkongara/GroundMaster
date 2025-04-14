@@ -118,61 +118,12 @@ class Scheduler:
         #self.model.Maximize(sum(self.assignments.values()))
 
     def get_allocation_plan(self) -> AllocationPlan:
-        allocation_plan = AllocationPlan()
+        allocation_plan = AllocationPlan(self.flights, self.service_map)
         
         for (flight_number, service_id, staff_id), var in self.assignments.items():
            allocation_plan.add_allocation(flight_number, service_id, staff_id, bool(self.solver.Value(var)))
 
         return allocation_plan
-
-    def get_schedule(self) -> Schedule:
-        """Generates a complete schedule including all services for all flights.
-        If no staff is assigned to a service, it will still be included with an empty staff list.
-        """
-        allocations: Dict[str, FlightAllocation] = {}
-
-        # Step 1: Iterate over all flights and services to initialize schedule
-        for flight in self.flights:
-            flight_allocation = FlightAllocation(
-                flight_number=flight.number,
-                arrival=flight.arrival,
-                departure=flight.departure,
-                services=[]
-            )
-
-            for flight_service in flight.flight_services:
-                service = self.service_map[flight_service.id]
-
-                # Create a FlightServiceAssignment with an empty staff list
-                service_assignment = ServiceAllocation(
-                    service_id=service.id,
-                    service_name=service.name,
-                    service_type=service.type.value,
-                    staff_allocation=[],
-                    required_staff_count=flight_service.count
-                )
-
-                flight_allocation.services.append(service_assignment)
-
-            allocations[flight.number] = flight_allocation
-
-        # Step 2: Iterate over assignments and populate assigned staff
-        for (flight_number, service_id, staff_id), var in self.assignments.items():
-            if self.solver.Value(var):  # If the staff is assigned to the service
-                flight_allocation = allocations[flight_number]
-                service_assignment = next(
-                    (s for s in flight_allocation.services if s.service_id == service_id),
-                    None
-                )
-
-                if service_assignment:
-                    staff = self.staff_map[staff_id]
-                    service_assignment.staff_allocation.append(StaffInfo(
-                        staff_id=staff.id,
-                        staff_name=staff.name
-                    ))
-
-        return Schedule(allocations=list(allocations.values()))
 
     def get_results(self):
         """Extract assignment results."""

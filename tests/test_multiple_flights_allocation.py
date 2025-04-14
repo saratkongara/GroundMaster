@@ -109,7 +109,7 @@ def test_all_service_types_assignment_across_multiple_flights():
 
     assert solution == Result.FOUND, "Scheduler should find a solution"
 
-    schedule = scheduler.get_schedule()
+    schedule = scheduler.get_allocation_plan().get_schedule()
     schedule.display()
 
     assert len(schedule.allocations) == 2, "Should have 2 schedules"

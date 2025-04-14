@@ -1,8 +1,13 @@
 import json
+from typing import List, Dict
+from scheduler.models import Flight, Service
+from scheduler.models import Schedule, FlightAllocation, ServiceAllocation, StaffInfo
 
 class AllocationPlan:
-    def __init__(self):
+    def __init__(self, flights: List[Flight], service_map: Dict[int, Service]):
         self.allocations = {}
+        self.flight_map = {f.number: f for f in flights}
+        self.service_map = service_map
 
     def add_allocation(self, flight_number: str, service_id: int, staff_id: int, value: bool):       
         # Initialize flight_number if not present
@@ -56,3 +61,49 @@ class AllocationPlan:
         Returns False if any key is missing in the nested dictionary.
         """
         return self.allocations.get(flight_number, {}).get(service_id, {}).get(staff_id, False)
+    
+    def get_schedule(self) -> Schedule:
+        """Generates a complete Schedule from the allocation data."""
+        schedule_allocations = []
+        
+        for flight_number, services in self.allocations.items():
+            flight = self.flight_map.get(flight_number)
+            if not flight:
+                continue
+                
+            flight_allocation = FlightAllocation(
+                flight_number=flight_number,
+                arrival=flight.arrival,
+                departure=flight.departure,
+                services=[]
+            )
+            
+            for service_id, staff_assignments in services.items():
+                service = self.service_map.get(service_id)
+                if not service:
+                    continue
+                
+                flight_service = next(
+                    (fs for fs in flight.flight_services if fs.id == service_id),
+                    None
+                )
+                if not flight_service:
+                    continue
+                
+                service_allocation = ServiceAllocation(
+                    service_id=service.id,
+                    service_name=service.name,
+                    service_type=service.type.value,
+                    staff_allocation=[
+                        StaffInfo(staff_id=staff_id, staff_name=f"Staff-{staff_id}")
+                        for staff_id, assigned in staff_assignments.items()
+                        if assigned
+                    ],
+                    required_staff_count=flight_service.count
+                )
+                
+                flight_allocation.services.append(service_allocation)
+            
+            schedule_allocations.append(flight_allocation)
+        
+        return Schedule(allocations=schedule_allocations)

@@ -54,7 +54,7 @@ def run():
     solution = scheduler.run()
 
     if solution == Result.FOUND:
-        schedule = scheduler.get_schedule()
+        schedule = scheduler.get_allocation_plan().get_schedule()
         schedule.display()
 
 if __name__ == "__main__":
