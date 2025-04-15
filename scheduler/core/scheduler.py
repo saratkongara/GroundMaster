@@ -5,7 +5,7 @@ from scheduler.models import Flight, Service, Staff, Bay
 from scheduler.models import Settings, Schedule, FlightAllocation, ServiceAllocation, StaffInfo
 from scheduler.plans import AllocationPlan
 from typing import Dict, List
-from scheduler.constraints import AvailabilityConstraint, CertificationConstraint, StaffCountConstraint, FlightLevelServiceConstraint, CommonLevelServiceConstraint, MultiFlightServiceConstraint, FlightTransitionConstraint
+from scheduler.constraints import AvailabilityConstraint, CertificationConstraint, StaffCountConstraint, MultiTaskServiceConstraint, SingleServiceConstraint, FixedServiceConstraint, FlightTransitionConstraint
 from scheduler.services import OverlapDetectionService
 
 # The Scheduler class is the main entry point for the scheduling process
@@ -53,9 +53,9 @@ class Scheduler:
             AvailabilityConstraint(flights, roster),
             CertificationConstraint(services, roster),
             StaffCountConstraint(flights, roster),
-            FlightLevelServiceConstraint(flights, roster, self.service_map),
-            CommonLevelServiceConstraint(flights, roster, self.service_map),
-            MultiFlightServiceConstraint(flights, roster, self.service_map),
+            MultiTaskServiceConstraint(flights, roster, self.service_map),
+            SingleServiceConstraint(flights, roster, self.service_map),
+            FixedServiceConstraint(flights, roster, self.service_map),
             FlightTransitionConstraint(
                 flights, roster, self.service_map, self.flight_map,
                 self.travel_time_map, self.overlapping_flights_map,
@@ -118,7 +118,7 @@ class Scheduler:
         #self.model.Maximize(sum(self.assignments.values()))
 
     def get_allocation_plan(self) -> AllocationPlan:
-        allocation_plan = AllocationPlan(self.flights, self.service_map)
+        allocation_plan = AllocationPlan(self.flights, self.service_map, self.staff_map)
         
         for (flight_number, service_id, staff_id), var in self.assignments.items():
            allocation_plan.add_allocation(flight_number, service_id, staff_id, bool(self.solver.Value(var)))

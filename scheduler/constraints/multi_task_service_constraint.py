@@ -2,7 +2,7 @@ import logging
 from .base_constraint import Constraint
 from scheduler.models.base import ServiceType
 
-class FlightLevelServiceConstraint(Constraint):
+class MultiTaskServiceConstraint(Constraint):
     """
     Constraint to ensure that the number of staff assigned to a service is within the specified limits.
     """
@@ -13,17 +13,17 @@ class FlightLevelServiceConstraint(Constraint):
 
     def apply(self, model, assignments):
         """
-        Ensure that staff can take multiple FlightLevel (F) services (cross utilization) on the same flight 
+        Ensure that staff can take multiple MultiTask (M) services (cross utilization) on the same flight 
         only if they do not conflict (based on excludes_services and cross_utilization_limit).
         """
 
-        logging.debug("Adding FlightLevel (F) service constraints...")
+        logging.debug("Adding MultiTask (M) service constraints...")
 
         for flight in self.flights:
-            # Get FlightLevel (F) services for this flight
+            # Get MultiTask (M) services for this flight
             flight_level_services = [
                 flight_service for flight_service in flight.flight_services 
-                if self.service_map[flight_service.id].type == ServiceType.FLIGHT_LEVEL
+                if self.service_map[flight_service.id].type == ServiceType.MULTI_TASK
             ]
 
             for staff in self.roster:
@@ -50,7 +50,7 @@ class FlightLevelServiceConstraint(Constraint):
                     model.Add(var_a + var_b <= 1)  # Prevent simultaneous assignment
 
     def _apply_cross_utilization_limit_constraint(self, model, flight_level_services, staff_service_assignment_vars, flight_number, staff_id):
-        # Collect all other FlightLevel services for this staff member on the same flight
+        # Collect all other MultiTask services for this staff member on the same flight
         # which can potentially be assigned to this staff member along with the current service
         # This is done to ensure that the staff member does not exceed the cross_utilization_limit
         # for the current service

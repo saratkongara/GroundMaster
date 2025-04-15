@@ -1,11 +1,11 @@
 [
-    { "id": 1, "name": "Toilet Cleaning", "certifications": [1], "certification_requirement": "All", "type": "F", "exclude_services": [], "cross_utilization_limit": 2 },
-    { "id": 2, "name": "Water Cart Service", "certifications": [2], "certification_requirement": "All", "type": "F", "exclude_services": [], "cross_utilization_limit": 2 },
-    { "id": 3, "name": "Refueling", "certifications": [3, 4], "certification_requirement": "All", "type": "C", "cross_utilization_limit": 0 },
-    { "id": 4, "name": "Baggage Loading", "certifications": [5, 6], "certification_requirement": "All", "type": "F", "exclude_services": [8], "cross_utilization_limit": 2 },
-    { "id": 5, "name": "GPU Service", "certifications": [7], "certification_requirement": "All", "type": "F", "exclude_services": [], "cross_utilization_limit": 3 },
-    { "id": 6, "name": "Team Lead On-Block", "certifications": [8, 9], "certification_requirement": "All", "type": "C", "cross_utilization_limit": 0 },
-    { "id": 7, "name": "ULD Loading/Unloading", "certifications": [10, 11], "certification_requirement": "All", "type": "F", "exclude_services": [4, 8], "cross_utilization_limit": 1 },
-    { "id": 8, "name": "Baggage Unloading", "certifications": [5, 6], "certification_requirement": "All", "type": "F", "exclude_services": [4, 7], "cross_utilization_limit": 2 },
-    { "id": 9, "name": "Pushback", "certifications": [12], "certification_requirement": "All", "type": "M", "exclude_services": [], "cross_utilization_limit": 0 }
+    { "id": 1, "name": "Toilet Cleaning", "certifications": [1], "certification_requirement": "All", "type": "M", "exclude_services": [], "cross_utilization_limit": 2 },
+    { "id": 2, "name": "Water Cart Service", "certifications": [2], "certification_requirement": "All", "type": "M", "exclude_services": [], "cross_utilization_limit": 2 },
+    { "id": 3, "name": "Refueling", "certifications": [3, 4], "certification_requirement": "All", "type": "S", "cross_utilization_limit": 0 },
+    { "id": 4, "name": "Baggage Loading", "certifications": [5, 6], "certification_requirement": "All", "type": "M", "exclude_services": [8], "cross_utilization_limit": 2 },
+    { "id": 5, "name": "GPU Service", "certifications": [7], "certification_requirement": "All", "type": "M", "exclude_services": [], "cross_utilization_limit": 3 },
+    { "id": 6, "name": "Team Lead On-Block", "certifications": [8, 9], "certification_requirement": "All", "type": "S", "cross_utilization_limit": 0 },
+    { "id": 7, "name": "ULD Loading/Unloading", "certifications": [10, 11], "certification_requirement": "All", "type": "M", "exclude_services": [4, 8], "cross_utilization_limit": 1 },
+    { "id": 8, "name": "Baggage Unloading", "certifications": [5, 6], "certification_requirement": "All", "type": "M", "exclude_services": [4, 7], "cross_utilization_limit": 2 },
+    { "id": 9, "name": "Pushback", "certifications": [12], "certification_requirement": "All", "type": "F", "exclude_services": [], "cross_utilization_limit": 0 }
 ]

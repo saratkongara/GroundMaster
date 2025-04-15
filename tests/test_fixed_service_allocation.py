@@ -3,14 +3,14 @@ from scheduler.core import Scheduler, Result
 from scheduler.models import Service, Settings, ServiceType, Bay, Flight, FlightService, Staff, Shift, CertificationRequirement
 from tests.utils import validate_schedule
 
-def test_only_one_multi_flight_service_assignment():
+def test_only_one_fixed_service_assignment():
     services = [
         Service(
             id=1,
             name="GPU Service",
             certifications=[7],
             certification_requirement=CertificationRequirement.ALL,
-            type=ServiceType.MULTI_FLIGHT,
+            type=ServiceType.FIXED,
             exclude_services=[],
             cross_utilization_limit=0
         ),
@@ -19,7 +19,7 @@ def test_only_one_multi_flight_service_assignment():
             name="Pushback",
             certifications=[12],
             certification_requirement=CertificationRequirement.ALL,
-            type=ServiceType.MULTI_FLIGHT,
+            type=ServiceType.FIXED,
             exclude_services=[],
             cross_utilization_limit=0
         )
@@ -69,14 +69,14 @@ def test_only_one_multi_flight_service_assignment():
     assert len(schedule.allocations) == 1, "Should have 1 schedule"
     validate_schedule(schedule)
 
-def test_same_multi_flight_service_assignment_across_flights():
+def test_same_fixed_service_assignment_across_flights():
     services = [
         Service(
             id=1,
             name="GPU Service",
             certifications=[7],
             certification_requirement=CertificationRequirement.ALL,
-            type=ServiceType.MULTI_FLIGHT,
+            type=ServiceType.FIXED,
             exclude_services=[],
             cross_utilization_limit=0
         ),
@@ -85,7 +85,7 @@ def test_same_multi_flight_service_assignment_across_flights():
             name="Pushback",
             certifications=[12],
             certification_requirement=CertificationRequirement.ALL,
-            type=ServiceType.MULTI_FLIGHT,
+            type=ServiceType.FIXED,
             exclude_services=[],
             cross_utilization_limit=0
         )

@@ -30,7 +30,7 @@ class FlightTransitionConstraint(Constraint):
                         (flight_a.bay_number, flight_b.bay_number), 0)
 
                     for service_a in flight_a.flight_services:
-                        if self.service_map[service_a.id].type == ServiceType.MULTI_FLIGHT:
+                        if self.service_map[service_a.id].type == ServiceType.FIXED:
                             continue
 
                         # Get service and check staff eligibility
@@ -44,7 +44,7 @@ class FlightTransitionConstraint(Constraint):
                         adjusted_a_end = a_end + timedelta(minutes=travel_time)
 
                         for service_b in flight_b.flight_services:
-                            if self.service_map[service_b.id].type == ServiceType.MULTI_FLIGHT:
+                            if self.service_map[service_b.id].type == ServiceType.FIXED:
                                 continue
 
                             # Get service and check staff eligibility

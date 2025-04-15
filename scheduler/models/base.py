@@ -1,9 +1,9 @@
 from enum import Enum
 
 class ServiceType(Enum):
-    FLIGHT_LEVEL = "F"
-    COMMON_LEVEL = "C"
-    MULTI_FLIGHT = "M"
+    MULTI_TASK = "M"
+    SINGLE = "S"
+    FIXED = "F"
 
 class CertificationRequirement(Enum):
     ALL = "All"

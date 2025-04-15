@@ -10,7 +10,7 @@ def test_single_certification_requirement():
             name="Toilet Cleaning",
             certifications=[1],
             certification_requirement=CertificationRequirement.ALL,
-            type=ServiceType.FLIGHT_LEVEL,
+            type=ServiceType.MULTI_TASK,
             exclude_services=[],
             cross_utilization_limit=2
         )
@@ -70,7 +70,7 @@ def test_certification_priority_requirement():
             name="Toilet Cleaning",
             certifications=[1],
             certification_requirement=CertificationRequirement.ALL,
-            type=ServiceType.FLIGHT_LEVEL,
+            type=ServiceType.MULTI_TASK,
             exclude_services=[],
             cross_utilization_limit=2
         )
@@ -131,7 +131,7 @@ def test_multiple_certification_requirement():
             name="Baggage Loading",
             certifications=[5,6],
             certification_requirement=CertificationRequirement.ALL,
-            type=ServiceType.FLIGHT_LEVEL,
+            type=ServiceType.MULTI_TASK,
             exclude_services=[],
             cross_utilization_limit=1
         )

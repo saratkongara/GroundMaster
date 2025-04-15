@@ -60,26 +60,26 @@ class OverlapDetectionService:
         return overlap_map
 
     def _get_latest_service_end(self, flight: Flight) -> datetime:
-        """Calculate latest non-MultiFlight service end time for a flight."""
+        """Calculate latest non-Fixed service end time for a flight."""
         services = [
             fs for fs in flight.flight_services
-            if self.service_map[fs.id].type != ServiceType.MULTI_FLIGHT
+            if self.service_map[fs.id].type != ServiceType.FIXED
         ]
         return (
             max(flight.get_service_time(fs.start, fs.end)[1] for fs in services)
-            if services # Only calculate max if non-MultiFlight services exist
+            if services # Only calculate max if non-Fixed services exist
             else flight.departure_time # Fallback to flight departure time
         )
 
     def _get_earliest_service_start(self, flight: Flight) -> datetime:
-        """Calculate earliest non-MultiFlight service start time for a flight."""
+        """Calculate earliest non-Fixed service start time for a flight."""
         services = [
             fs for fs in flight.flight_services
-            if self.service_map[fs.id].type != ServiceType.MULTI_FLIGHT
+            if self.service_map[fs.id].type != ServiceType.FIXED
         ]
         return (
             min(flight.get_service_time(fs.start, fs.end)[0] for fs in services)
-            if services # Only calculate min if non-MultiFlight services exist
+            if services # Only calculate min if non-Fixed services exist
             else flight.arrival_time # Fallback to flight arrival time
         )
 

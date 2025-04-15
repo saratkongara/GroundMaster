@@ -10,7 +10,7 @@ def test_all_service_types_assignment_across_multiple_flights():
             name="GPU Service",
             certifications=[7],
             certification_requirement=CertificationRequirement.ALL,
-            type=ServiceType.MULTI_FLIGHT,
+            type=ServiceType.FIXED,
             exclude_services=[],
             cross_utilization_limit=0
         ),
@@ -19,7 +19,7 @@ def test_all_service_types_assignment_across_multiple_flights():
             name="Refueling",
             certifications=[3,4],
             certification_requirement=CertificationRequirement.ALL,
-            type=ServiceType.COMMON_LEVEL,
+            type=ServiceType.SINGLE,
             exclude_services=[],
             cross_utilization_limit=0
         ),
@@ -28,7 +28,7 @@ def test_all_service_types_assignment_across_multiple_flights():
             name="Toilet Cleaning",
             certifications=[1],
             certification_requirement=CertificationRequirement.ALL,
-            type=ServiceType.FLIGHT_LEVEL,
+            type=ServiceType.MULTI_TASK,
             exclude_services=[],
             cross_utilization_limit=2
         ),
@@ -37,7 +37,7 @@ def test_all_service_types_assignment_across_multiple_flights():
             name="Water Cart Service",
             certifications=[2],
             certification_requirement=CertificationRequirement.ALL,
-            type=ServiceType.FLIGHT_LEVEL,
+            type=ServiceType.MULTI_TASK,
             exclude_services=[],
             cross_utilization_limit=2
         ),
@@ -46,7 +46,7 @@ def test_all_service_types_assignment_across_multiple_flights():
             name="Baggage Loading",
             certifications=[5,6],
             certification_requirement=CertificationRequirement.ALL,
-            type=ServiceType.FLIGHT_LEVEL,
+            type=ServiceType.MULTI_TASK,
             exclude_services=[3,4],
             cross_utilization_limit=1
         )

@@ -1,13 +1,14 @@
 import json
 from typing import List, Dict
-from scheduler.models import Flight, Service
+from scheduler.models import Flight, Service, Staff
 from scheduler.models import Schedule, FlightAllocation, ServiceAllocation, StaffInfo
 
 class AllocationPlan:
-    def __init__(self, flights: List[Flight], service_map: Dict[int, Service]):
+    def __init__(self, flights: List[Flight], service_map: Dict[int, Service], staff_map: Dict[int, Staff]):
         self.allocations = {}
         self.flight_map = {f.number: f for f in flights}
         self.service_map = service_map
+        self.staff_map = staff_map
 
     def add_allocation(self, flight_number: str, service_id: int, staff_id: int, value: bool):       
         # Initialize flight_number if not present
@@ -95,7 +96,7 @@ class AllocationPlan:
                     service_name=service.name,
                     service_type=service.type.value,
                     staff_allocation=[
-                        StaffInfo(staff_id=staff_id, staff_name=f"Staff-{staff_id}")
+                        StaffInfo(staff_id=staff_id, staff_name=self._get_staff_name(staff_id))
                         for staff_id, assigned in staff_assignments.items()
                         if assigned
                     ],
@@ -107,3 +108,8 @@ class AllocationPlan:
             schedule_allocations.append(flight_allocation)
         
         return Schedule(allocations=schedule_allocations)
+    
+    def _get_staff_name(self, staff_id: int) -> str:
+        """Helper to get staff name or return default if not found"""
+        staff = self.staff_map.get(staff_id)
+        return staff.name if staff else f"Unknown Staff ({staff_id})"

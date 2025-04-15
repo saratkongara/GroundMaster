@@ -3,14 +3,14 @@ from scheduler.core import Scheduler, Result
 from scheduler.models import Service, Settings, ServiceType, Bay, Flight, FlightService, Staff, Shift, CertificationRequirement
 from tests.utils import validate_schedule
 
-def test_only_one_common_level_service_assignment():
+def test_only_one_single_service_assignment():
     services = [
         Service(
             id=1,
             name="Refueling",
             certifications=[3,4],
             certification_requirement=CertificationRequirement.ALL,
-            type=ServiceType.COMMON_LEVEL,
+            type=ServiceType.SINGLE,
             exclude_services=[],
             cross_utilization_limit=0
         ),
@@ -19,7 +19,7 @@ def test_only_one_common_level_service_assignment():
             name="Team Lead On-Block",
             certifications=[8,9],
             certification_requirement=CertificationRequirement.ALL,
-            type=ServiceType.COMMON_LEVEL,
+            type=ServiceType.SINGLE,
             exclude_services=[],
             cross_utilization_limit=0
         )
@@ -66,14 +66,14 @@ def test_only_one_common_level_service_assignment():
     schedule = scheduler.get_allocation_plan().get_schedule()
     validate_schedule(schedule)
 
-def test_no_other_service_is_assigned_when_common_level_service_is_assigned():
+def test_no_other_service_is_assigned_when_single_service_is_assigned():
     services = [
         Service(
             id=1,
             name="Refueling",
             certifications=[3,4],
             certification_requirement=CertificationRequirement.ALL,
-            type=ServiceType.COMMON_LEVEL,
+            type=ServiceType.SINGLE,
             exclude_services=[],
             cross_utilization_limit=0
         ),
@@ -82,7 +82,7 @@ def test_no_other_service_is_assigned_when_common_level_service_is_assigned():
             name="Water Cart Service",
             certifications=[2],
             certification_requirement=CertificationRequirement.ALL,
-            type=ServiceType.FLIGHT_LEVEL,
+            type=ServiceType.MULTI_TASK,
             exclude_services=[],
             cross_utilization_limit=2
         )

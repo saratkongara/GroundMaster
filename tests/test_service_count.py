@@ -10,7 +10,7 @@ def test_service_count_requirement():
             name="Refueling",
             certifications=[3,4],
             certification_requirement=CertificationRequirement.ALL,
-            type=ServiceType.COMMON_LEVEL,
+            type=ServiceType.SINGLE,
             exclude_services=[],
             cross_utilization_limit=1
         )

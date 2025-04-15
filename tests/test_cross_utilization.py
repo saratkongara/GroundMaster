@@ -10,7 +10,7 @@ def test_cross_utilization_with_no_conflict_requirement():
             name="Toilet Cleaning",
             certifications=[1],
             certification_requirement=CertificationRequirement.ALL,
-            type=ServiceType.FLIGHT_LEVEL,
+            type=ServiceType.MULTI_TASK,
             exclude_services=[],
             cross_utilization_limit=2
         ),
@@ -19,7 +19,7 @@ def test_cross_utilization_with_no_conflict_requirement():
             name="Water Cart Service",
             certifications=[2],
             certification_requirement=CertificationRequirement.ALL,
-            type=ServiceType.FLIGHT_LEVEL,
+            type=ServiceType.MULTI_TASK,
             exclude_services=[],
             cross_utilization_limit=2
         )
@@ -73,7 +73,7 @@ def test_cross_utilization_with_exclude_services_requirement():
             name="Toilet Cleaning",
             certifications=[1],
             certification_requirement=CertificationRequirement.ALL,
-            type=ServiceType.FLIGHT_LEVEL,
+            type=ServiceType.MULTI_TASK,
             exclude_services=[],
             cross_utilization_limit=2
         ),
@@ -82,7 +82,7 @@ def test_cross_utilization_with_exclude_services_requirement():
             name="Water Cart Service",
             certifications=[2],
             certification_requirement=CertificationRequirement.ALL,
-            type=ServiceType.FLIGHT_LEVEL,
+            type=ServiceType.MULTI_TASK,
             exclude_services=[1],
             cross_utilization_limit=2
         )

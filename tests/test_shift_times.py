@@ -10,7 +10,7 @@ def test_single_shift_requirement():
             name="Toilet Cleaning",
             certifications=[1],
             certification_requirement=CertificationRequirement.ALL,
-            type=ServiceType.FLIGHT_LEVEL,
+            type=ServiceType.MULTI_TASK,
             exclude_services=[],
             cross_utilization_limit=2
         )
@@ -64,7 +64,7 @@ def test_multiple_shift_requirement():
             name="Toilet Cleaning",
             certifications=[1],
             certification_requirement=CertificationRequirement.ALL,
-            type=ServiceType.FLIGHT_LEVEL,
+            type=ServiceType.MULTI_TASK,
             exclude_services=[],
             cross_utilization_limit=2
         )
